@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Visualizer</title>
+    <meta name="description" content="Track and visualize your monthly bill payments">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>$</text></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function BillVisualizerApp() {
+          const [bills, setBills] = useState([]);
+          const [income, setIncome] = useState({ amount: '', payPeriod: 'monthly' });
+          const [selectedView, setSelectedView] = useState('timeline');
+          const [isAddingBill, setIsAddingBill] = useState(false);
+          const [editingBill, setEditingBill] = useState(null);
+          const [showWelcome, setShowWelcome] = useState(true);
+          const [searchTerm, setSearchTerm] = useState('');
+          const [filterCategory, setFilterCategory] = useState('all');
+          const [deleteConfirm, setDeleteConfirm] = useState(null);
+          const [showIncomeModal, setShowIncomeModal] = useState(false);
+          
+          const [newBill, setNewBill] = useState({
+            name: '',
+            amount: '',
+            day: '1',
+            type: 'ongoing',
+            category: 'other',
+            frequency: 'monthly',
+            paymentsTotal: '',
+            paymentsRemaining: '',
+            endDate: '',
+            notes: ''
+          });
+
+          const BILL_TYPES = {
+            ongoing: 'Ongoing',
+            fixed: 'Fixed Term',
+            contract: 'Contract',
+            onetime: 'One-time'
+          };
+
+          const CATEGORIES = {
+            utilities: { name: 'Utilities', color: '#0ea5e9' },
+            subscriptions: { name: 'Subscriptions', color: '#8b5cf6' },
+            housing: { name: 'Housing', color: '#ec4899' },
+            transport: { name: 'Transport', color: '#f97316' },
+            loans: { name: 'Loans', color: '#ef4444' },
+            insurance: { name: 'Insurance', color: '#059669' },
+            installments: { name: 'Installments', color: '#eab308' },
+            other: { name: 'Other', color: '#64748b' }
+          };
+
+          const FREQUENCIES = {
+            weekly: 'Weekly',
+            biweekly: 'Bi-weekly',
+            monthly: 'Monthly',
+            quarterly: 'Quarterly',
+            annual: 'Annual'
+          };
+
+          const PAY_PERIODS = {
+            weekly: 'Weekly',
+            biweekly: 'Bi-weekly',
+            semimonthly: 'Semi-monthly',
+            monthly: 'Monthly',
+            annual: 'Annual'
+          };
+
+          useEffect(() => {
+            try {
+              const savedBills = localStorage.getItem('userBills');
+              const savedIncome = localStorage.getItem('userIncome');
+              const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+              
+              if (savedBills) {
+                const parsed = JSON.parse(savedBills);
+                const migrated = parsed.map(b => ({
+                  ...b,
+                  type: b.type || 'ongoing',
+                  category: b.category || 'other',
+                  frequency: b.frequency || 'monthly',
+                  paymentHistory: b.paymentHistory || []
+                }));
+                setBills(migrated);
+              }
+              
+              if (savedIncome) {
+                setIncome(JSON.parse(savedIncome));
+              }
+              
+              if (hasSeenWelcome) {
+                setShowWelcome(false);
+              }
+            } catch (e) {
+              console.error('Error loading saved data:', e);
+            }
+          }, []);
+
+          useEffect(() => {
+            try {
+              if (bills.length > 0) {
+                localStorage.setItem('userBills', JSON.stringify(bills));
+              }
+            } catch (e) {
+              console.error('Error saving data:', e);
+            }
+          }, [bills]);
+
+          useEffect(() => {
+            try {
+              localStorage.setItem('userIncome', JSON.stringify(income));
+            } catch (e) {
+              console.error('Error saving income:', e);
+            }
+          }, [income]);
+
+          const getMonthlyEquivalent = (amount, freq) => {
+            const mult = {
+              weekly: 4.33,
+              biweekly: 2.17,
+              monthly: 1,
+              quarterly: 0.33,
+              annual: 0.083
+            };
+            return amount * (mult[freq] || 1);
+          };
+
+          const getMonthlyIncome = () => {
+            if (!income.amount) return 0;
+            const amt = parseFloat(income.amount);
+            const mult = {
+              weekly: 4.33,
+              biweekly: 2.17,
+              semimonthly: 2,
+              monthly: 1,
+              annual: 1/12
+            };
+            return amt * (mult[income.payPeriod] || 1);
+          };
+
+          const addBill = () => {
+            // Validation
+            if (!newBill.name || newBill.name.trim().length === 0) {
+              alert('Bill name is required');
+              return;
+            }
+            if (newBill.name.length > 100) {
+              alert('Bill name too long (max 100 characters)');
+              return;
+            }
+            
+            const amt = parseFloat(newBill.amount);
+            if (isNaN(amt) || amt <= 0) {
+              alert('Please enter a valid amount greater than $0');
+              return;
+            }
+            if (amt > 999999) {
+              alert('Amount too large (max $999,999)');
+              return;
+            }
+            
+            const d = parseInt(newBill.day);
+            if (isNaN(d) || d < 1 || d > 31) {
+              alert('Please enter a day between 1 and 31');
+              return;
+            }
+            
+            // Create the bill
+            setBills([...bills, {
+              id: Date.now(),
+              name: newBill.name.trim(),
+              amount: amt,
+              day: d,
+              type: newBill.type,
+              category: newBill.category,
+              frequency: newBill.frequency,
+              paymentsTotal: newBill.paymentsTotal ? parseInt(newBill.paymentsTotal) : null,
+              paymentsRemaining: newBill.paymentsRemaining ? parseInt(newBill.paymentsRemaining) : newBill.paymentsTotal ? parseInt(newBill.paymentsTotal) : null,
+              endDate: newBill.endDate || null,
+              notes: newBill.notes,
+              paymentHistory: []
+            }]);
+            
+            // Reset form
+            setNewBill({ 
+              name: '', amount: '', day: '1', type: 'ongoing', 
+              category: 'other', frequency: 'monthly',
+              paymentsTotal: '', paymentsRemaining: '', endDate: '', notes: ''
+            });
+            setIsAddingBill(false);
+          };
+
+          const deleteBill = (id) => {
+            setBills(bills.filter(bill => bill.id !== id));
+            setDeleteConfirm(null);
+          };
+
+          const startEdit = (bill) => {
+            setEditingBill(bill);
+            setNewBill({
+              name: bill.name,
+              amount: bill.amount.toString(),
+              day: bill.day.toString(),
+              type: bill.type || 'ongoing',
+              category: bill.category || 'other',
+              frequency: bill.frequency || 'monthly',
+              paymentsTotal: bill.paymentsTotal || '',
+              paymentsRemaining: bill.paymentsRemaining || '',
+              endDate: bill.endDate || '',
+              notes: bill.notes || ''
+            });
+            setIsAddingBill(true);
+          };
+
+          const saveEdit = () => {
+            if (!newBill.name || newBill.name.trim().length === 0) {
+              alert('Bill name is required');
+              return;
+            }
+            
+            const amt = parseFloat(newBill.amount);
+            if (isNaN(amt) || amt <= 0) {
+              alert('Please enter a valid amount');
+              return;
+            }
+            
+            const d = parseInt(newBill.day);
+            if (isNaN(d) || d < 1 || d > 31) {
+              alert('Please enter a day between 1 and 31');
+              return;
+            }
+            
+            setBills(bills.map(bill => 
+              bill.id === editingBill.id ? {
+                ...bill,
+                name: newBill.name.trim(),
+                amount: amt,
+                day: d,
+                type: newBill.type,
+                category: newBill.category,
+                frequency: newBill.frequency,
+                paymentsTotal: newBill.paymentsTotal ? parseInt(newBill.paymentsTotal) : null,
+                paymentsRemaining: newBill.paymentsRemaining ? parseInt(newBill.paymentsRemaining) : null,
+                endDate: newBill.endDate || null,
+                notes: newBill.notes
+              } : bill
+            ));
+            
+            setEditingBill(null);
+            setIsAddingBill(false);
+            setNewBill({ 
+              name: '', amount: '', day: '1', type: 'ongoing', 
+              category: 'other', frequency: 'monthly',
+              paymentsTotal: '', paymentsRemaining: '', endDate: '', notes: ''
+            });
+          };
+
+          const markPaid = (billId) => {
+            setBills(bills.map(bill => {
+              if (bill.id === billId) {
+                const history = [...(bill.paymentHistory || []), new Date().toISOString()];
+                const remaining = bill.paymentsRemaining ? Math.max(0, bill.paymentsRemaining - 1) : null;
+                return { ...bill, paymentHistory: history, paymentsRemaining: remaining };
+              }
+              return bill;
+            }));
+          };
+
+          const exportToCSV = () => {
+            const headers = ['Name', 'Amount', 'Day', 'Frequency', 'Type', 'Category', 'Payments Total', 'Payments Remaining', 'End Date', 'Notes'];
+            const rows = bills.map(b => [
+              b.name,
+              b.amount,
+              b.day,
+              b.frequency || 'monthly',
+              b.type || 'ongoing',
+              b.category || 'other',
+              b.paymentsTotal || '',
+              b.paymentsRemaining || '',
+              b.endDate || '',
+              (b.notes || '').replace(/"/g, '""')
+            ]);
+            
+            const csv = [
+              headers.join(','),
+              ...rows.map(row => row.map(cell => {
+                const str = String(cell);
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                  return `"${str}"`;
+                }
+                return str;
+              }).join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `bills-${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+          };
+
+          const importFromCSV = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              try {
+                const text = e.target.result;
+                const lines = text.split('\n').filter(l => l.trim());
+                if (lines.length < 2) {
+                  alert('CSV file is empty');
+                  return;
+                }
+                
+                const imported = [];
+                for (let i = 1; i < lines.length; i++) {
+                  const values = parseCSVLine(lines[i]);
+                  if (values.length < 3) continue;
+                  
+                  imported.push({
+                    id: Date.now() + i,
+                    name: values[0] || 'Bill',
+                    amount: parseFloat(values[1]) || 0,
+                    day: parseInt(values[2]) || 1,
+                    frequency: values[3] || 'monthly',
+                    type: values[4] || 'ongoing',
+                    category: values[5] || 'other',
+                    paymentsTotal: values[6] ? parseInt(values[6]) : null,
+                    paymentsRemaining: values[7] ? parseInt(values[7]) : null,
+                    endDate: values[8] || null,
+                    notes: values[9] || '',
+                    paymentHistory: []
+                  });
+                }
+                
+                if (confirm(`Import ${imported.length} bills? This will replace your current data.`)) {
+                  setBills(imported);
+                }
+              } catch (err) {
+                alert('Error reading CSV file');
+                console.error(err);
+              }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+          };
+
+          const parseCSVLine = (line) => {
+            const vals = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+              const char = line[i];
+              if (char === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                  current += '"';
+                  i++;
+                } else {
+                  inQuotes = !inQuotes;
+                }
+              } else if (char === ',' && !inQuotes) {
+                vals.push(current.trim());
+                current = '';
+              } else {
+                current += char;
+              }
+            }
+            vals.push(current.trim());
+            return vals.map(v => v.replace(/^"|"$/g, ''));
+          };
+
+          const dismissWelcome = () => {
+            setShowWelcome(false);
+            localStorage.setItem('hasSeenWelcome', 'true');
+          };
+
+          const loadSampleData = () => {
+            const samples = [
+              { id: 1, name: 'Phone Bill', amount: 110, day: 17, type: 'ongoing', category: 'utilities', frequency: 'monthly', paymentHistory: [] },
+              { id: 2, name: 'Car Insurance', amount: 157, day: 1, type: 'ongoing', category: 'insurance', frequency: 'monthly', paymentHistory: [] },
+              { id: 3, name: 'Netflix', amount: 15, day: 5, type: 'ongoing', category: 'subscriptions', frequency: 'monthly', paymentHistory: [] },
+              { id: 4, name: 'AirPods', amount: 50, day: 15, type: 'fixed', category: 'installments', frequency: 'biweekly', paymentsTotal: 4, paymentsRemaining: 3, paymentHistory: [] },
+              { id: 5, name: 'Rent', amount: 900, day: 1, type: 'ongoing', category: 'housing', frequency: 'monthly', paymentHistory: [] },
+            ];
+            setBills(samples);
+            setIncome({ amount: '3500', payPeriod: 'monthly' });
+            dismissWelcome();
+          };
+
+          const clearAllData = () => {
+            if (confirm('Clear ALL bills and income data? This cannot be undone.')) {
+              setBills([]);
+              setIncome({ amount: '', payPeriod: 'monthly' });
+              localStorage.removeItem('userBills');
+              localStorage.removeItem('userIncome');
+            }
+          };
+
+          const filteredBills = bills.filter(b => {
+            const matchName = b.name.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchCat = filterCategory === 'all' || b.category === filterCategory;
+            return matchName && matchCat;
+          });
+
+          const monthlyBills = [...filteredBills].sort((a, b) => a.day - b.day);
+          
+          const ongoingBills = bills.filter(b => b.type === 'ongoing');
+          const finiteBills = bills.filter(b => b.type !== 'ongoing' && (!b.paymentsRemaining || b.paymentsRemaining > 0));
+          
+          const monthlyBaseline = ongoingBills.reduce((sum, b) => sum + getMonthlyEquivalent(b.amount, b.frequency), 0);
+          const finiteTotal = finiteBills.reduce((sum, b) => sum + getMonthlyEquivalent(b.amount, b.frequency), 0);
+          const totalMonthly = monthlyBaseline + finiteTotal;
+          
+          const monthlyIncome = getMonthlyIncome();
+          const netIncome = monthlyIncome - totalMonthly;
+          const incomePercent = monthlyIncome > 0 ? (totalMonthly / monthlyIncome) * 100 : 0;
+          
+          const endingSoon = bills.filter(b => b.paymentsRemaining && b.paymentsRemaining <= 3 && b.paymentsRemaining > 0).length;
+
+          const getForecast = () => {
+            const months = [];
+            const today = new Date();
+            
+            for (let i = 0; i < 6; i++) {
+              const month = new Date(today.getFullYear(), today.getMonth() + i, 1);
+              const activeBills = bills.filter(bill => {
+                if (bill.type === 'onetime') {
+                  const d = new Date(bill.endDate);
+                  return d.getMonth() === month.getMonth() && d.getFullYear() === month.getFullYear();
+                }
+                if (bill.type === 'fixed') {
+                  return !bill.paymentsRemaining || bill.paymentsRemaining > i;
+                }
+                if (bill.type === 'contract' && bill.endDate) {
+                  return month <= new Date(bill.endDate);
+                }
+                return true;
+              });
+              
+              const ongoing = activeBills.filter(b => b.type === 'ongoing').reduce((s, b) => s + getMonthlyEquivalent(b.amount, b.frequency), 0);
+              const finite = activeBills.filter(b => b.type !== 'ongoing').reduce((s, b) => s + getMonthlyEquivalent(b.amount, b.frequency), 0);
+              
+              months.push({
+                date: month,
+                ongoing,
+                finite,
+                total: ongoing + finite,
+                net: monthlyIncome - (ongoing + finite)
+              });
+            }
+            return months;
+          };
+
+          const forecast = getForecast();
+          const avgPerWeek = totalMonthly / 4.33;
+
+          const getPaymentClusters = () => {
+            const clusters = [];
+            for (let i = 1; i <= 31; i++) {
+              const range = monthlyBills.filter(b => b.day >= i && b.day <= i + 3);
+              if (range.length > 0) {
+                const total = range.reduce((sum, b) => sum + b.amount, 0);
+                clusters.push({ start: i, count: range.length, total });
+              }
+            }
+            return clusters.sort((a, b) => b.total - a.total).slice(0, 3);
+          };
+
+          const heavyPeriods = getPaymentClusters();
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-4 md:p-8">
+              <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+                
+                * { 
+                  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                }
+                .mono { 
+                  font-family: 'JetBrains Mono', monospace;
+                  font-variant-numeric: tabular-nums;
+                }
+                
+                .card {
+                  transition: all 0.2s ease;
+                  border: 1px solid rgba(148, 163, 184, 0.1);
+                }
+                .card:hover {
+                  border-color: rgba(148, 163, 184, 0.2);
+                }
+                
+                .timeline-bar {
+                  animation: slideIn 0.4s ease backwards;
+                }
+                @keyframes slideIn {
+                  from { opacity: 0; transform: translateX(-10px); }
+                  to { opacity: 1; transform: translateX(0); }
+                }
+                
+                .stat-card {
+                  background: rgba(30, 41, 59, 0.5);
+                  backdrop-filter: blur(10px);
+                  border: 1px solid rgba(148, 163, 184, 0.1);
+                }
+                
+                .btn-primary {
+                  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+                }
+                .btn-primary:hover {
+                  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+                }
+
+                .badge {
+                  display: inline-block;
+                  padding: 2px 8px;
+                  border-radius: 12px;
+                  font-size: 11px;
+                  font-weight: 600;
+                  text-transform: uppercase;
+                  letter-spacing: 0.3px;
+                }
+              `}</style>
+
+              {showWelcome && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                  <div className="stat-card rounded-xl p-8 max-w-xl w-full">
+                    <h2 className="text-3xl font-semibold mb-3">
+                      Bill Visualizer
+                    </h2>
+                    <p className="text-slate-400 mb-6">
+                      Track bills, manage income, and see exactly where your money goes each month.
+                    </p>
+                    
+                    <div className="space-y-3 mb-8 text-sm text-slate-300">
+                      <div className="flex gap-3">
+                        <span className="text-sky-500">•</span>
+                        <span>Track ongoing bills, installments, and one-time payments</span>
+                      </div>
+                      <div className="flex gap-3">
+                        <span className="text-sky-500">•</span>
+                        <span>Set your income and see what's left after bills</span>
+                      </div>
+                      <div className="flex gap-3">
+                        <span className="text-sky-500">•</span>
+                        <span>View 6-month forecast and payment timeline</span>
+                      </div>
+                      <div className="flex gap-3">
+                        <span className="text-sky-500">•</span>
+                        <span>Everything saved locally in your browser</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={dismissWelcome}
+                        className="flex-1 px-6 py-3 btn-primary rounded-lg font-medium transition-all"
+                      >
+                        Get Started
+                      </button>
+                      <button
+                        onClick={loadSampleData}
+                        className="flex-1 px-6 py-3 bg-slate-700 rounded-lg font-medium hover:bg-slate-600 transition-all"
+                      >
+                        Load Sample
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="max-w-6xl mx-auto">
+                <div className="mb-8 flex items-start justify-between gap-4">
+                  <div>
+                    <h1 className="text-4xl font-semibold mb-2">
+                      Bill Visualizer
+                    </h1>
+                    <p className="text-slate-400">Income tracking & bill forecasting</p>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={exportToCSV}
+                      disabled={bills.length === 0}
+                      className="px-4 py-2 bg-slate-700 rounded-lg hover:bg-slate-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed text-sm"
+                    >
+                      Export CSV
+                    </button>
+                    <label className="px-4 py-2 bg-slate-700 rounded-lg hover:bg-slate-600 transition-all cursor-pointer text-sm">
+                      Import CSV
+                      <input type="file" accept=".csv" onChange={importFromCSV} className="hidden" />
+                    </label>
+                    {bills.length > 0 && (
+                      <button
+                        onClick={clearAllData}
+                        className="px-4 py-2 bg-red-900/30 rounded-lg hover:bg-red-900/40 transition-all text-sm text-red-400"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Add/Edit Bill Form - shown when adding or editing */}
+                {(isAddingBill || editingBill) && (
+                  <div className="stat-card rounded-xl p-6 mb-8">
+                    <h3 className="text-lg font-medium mb-4">{editingBill ? 'Edit Bill' : 'New Bill'}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <input
+                        type="text"
+                        placeholder="Bill name"
+                        value={newBill.name}
+                        onChange={(e) => setNewBill({...newBill, name: e.target.value})}
+                        className="px-4 py-2.5 bg-slate-700/50 rounded-lg border border-slate-600 focus:border-sky-500 outline-none text-white placeholder-slate-500"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Amount"
+                        value={newBill.amount}
+                        onChange={(e) => setNewBill({...newBill, amount: e.target.value})}
+                        className="px-4 py-2.5 bg-slate-700/50 rounded-lg border border-slate-600 focus:border-sky-500 outline-none text-white placeholder-slate-500"
+                      />
+                      <select
+                        value={newBill.type}
+                        onChange={(e) => setNewBill({...newBill, type: e.target.value})}
+                        className="px-4 py-2.5 bg-slate-700/50 rounded-lg border border-slate-600 focus:border-sky-500 outline-none text-white"
+                      >
+                        {Object.entries(BILL_TYPES).map(([k, v]) => (
+                          <option key={k} value={k}>{v}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={newBill.category}
+                        onChange={(e) => setNewBill({...newBill, category: e.target.value})}
+                        className="px-4 py-2.5 bg-slate-700/50 rounded-lg border border-slate-600 focus:border-sky-500 outline-none text-white"
+                      >
+                        {Object.entries(CATEGORIES).map(([k, v]) => (
+                          <option key={k} value={k}>{v.name}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={newBill.frequency}
+                        onChange={(e) => setNewBill({...newBill, frequency: e.target.value})}
+                        className="px-4 py-2.5 bg-slate-700/50 rounded-lg border border-slate-600 focus:border-sky-500 outline-none text-white"
+                      >
+                        {Object.entries(FREQUENCIES).map(([k, v]) => (
+                          <option key={k} value={k}>{v}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        placeholder="Day (1-31)"
+                        min="1"
+                        max="31"
+                        value={newBill.day}
+                        onChange={(e) => setNewBill({...newBill, day: e.target.value})}
+                        className="px-4 py-2.5 bg-slate-700/50 rounded-lg border border-slate-600 focus:border-sky-500 outline-none text-white placeholder-slate-500"
+                      />
+                      
+                      {newBill.type === 'fixed' && (
+                        <>
+                          <input
+                            type="number"
+                            placeholder="Total payments"
+                            value={newBill.paymentsTotal}
+                            onChange={(e) => setNewBill({...newBill, paymentsTotal: e.target.value, paymentsRemaining: e.target.value})}
+                            className="px-4 py-2.5 bg-slate-700/50 rounded-lg border border-slate-600 focus:border-sky-500 outline-none text-white placeholder-slate-500"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Payments remaining"
+                            value={newBill.paymentsRemaining}
+                            onChange={(e) => setNewBill({...newBill, paymentsRemaining: e.target.value})}
+                            className="px-4 py-2.5 bg-slate-700/50 rounded-lg border border-slate-600 focus:border-sky-500 outline-none text-white placeholder-slate-500"
+                          />
+                        </>
+                      )}
+                      
+                      {(newBill.type === 'contract' || newBill.type === 'onetime') && (
+                        <input
+                          type="date"
+                          value={newBill.endDate}
+                          onChange={(e) => setNewBill({...newBill, endDate: e.target.value})}
+                          className="px-4 py-2.5 bg-slate-700/50 rounded-lg border border-slate-600 focus:border-sky-500 outline-none text-white"
+                        />
+                      )}
+                    </div>
+                    
+                    <textarea
+                      placeholder="Notes (optional)"
+                      value={newBill.notes}
+                      onChange={(e) => setNewBill({...newBill, notes: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-slate-700/50 rounded-lg border border-slate-600 focus:border-sky-500 outline-none text-white placeholder-slate-500 mb-4"
+                      rows="2"
+                    />
+                    
+                    <div className="flex gap-2">
+                      <button
+                        onClick={editingBill ? saveEdit : addBill}
+                        className="px-4 py-2.5 bg-green-600 rounded-lg hover:bg-green-700 transition-all font-medium"
+                      >
+                        {editingBill ? 'Save' : 'Add'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsAddingBill(false);
+                          setEditingBill(null);
+                          setNewBill({ name: '', amount: '', day: '1', type: 'ongoing', category: 'other', frequency: 'monthly', paymentsTotal: '', paymentsRemaining: '', endDate: '', notes: '' });
+                        }}
+                        className="px-4 py-2.5 bg-slate-700 rounded-lg hover:bg-slate-600 transition-all"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {bills.length === 0 ? (
+                  <div className="stat-card rounded-xl p-16 text-center">
+                    <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-slate-700/50 flex items-center justify-center">
+                      <span className="text-2xl font-bold text-slate-500">$</span>
+                    </div>
+                    <h2 className="text-2xl font-semibold mb-3">No bills yet</h2>
+                    <p className="text-slate-400 mb-8">Add your first bill to start tracking</p>
+                    <div className="flex gap-3 justify-center">
+                      <button
+                        onClick={() => setIsAddingBill(true)}
+                        className="px-6 py-3 btn-primary rounded-lg font-medium transition-all"
+                      >
+                        Add Bill
+                      </button>
+                      <button
+                        onClick={() => setShowIncomeModal(true)}
+                        className="px-6 py-3 bg-slate-700 rounded-lg font-medium hover:bg-slate-600 transition-all"
+                      >
+                        Set Income
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {monthlyIncome > 0 && (
+                      <div className="stat-card rounded-xl p-6 mb-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-medium">Income Overview</h3>
+                          <button
+                            onClick={() => setShowIncomeModal(true)}
+                            className="text-sm text-sky-400 hover:text-sky-300"
+                          >
+                            Edit Income
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div>
+                            <div className="text-xs text-slate-400 mb-1">Monthly Income</div>
+                            <div className="text-2xl font-semibold mono text-green-400">${monthlyIncome.toFixed(0)}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-slate-400 mb-1">Total Bills</div>
+                            <div className="text-2xl font-semibold mono text-orange-400">${totalMonthly.toFixed(0)}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-slate-400 mb-1">Left Over</div>
+                            <div className={`text-2xl font-semibold mono ${netIncome >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              ${netIncome.toFixed(0)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-slate-400 mb-1">Bills % of Income</div>
+                            <div className={`text-2xl font-semibold mono ${incomePercent > 100 ? 'text-red-400' : incomePercent > 70 ? 'text-orange-400' : 'text-green-400'}`}>
+                              {incomePercent.toFixed(0)}%
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-4">
+                          <div className="w-full bg-slate-700/30 rounded-full h-3 overflow-hidden">
+                            <div 
+                              className={`h-full ${incomePercent > 100 ? 'bg-red-500' : incomePercent > 70 ? 'bg-orange-500' : 'bg-green-500'}`}
+                              style={{ width: `${Math.min(incomePercent, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {!monthlyIncome && (
+                      <div className="stat-card rounded-xl p-4 mb-6 border-yellow-500/30">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-yellow-400">⚠️</span>
+                            <span className="text-sm">Set your income to see how bills compare to earnings</span>
+                          </div>
+                          <button
+                            onClick={() => setShowIncomeModal(true)}
+                            className="px-4 py-2 btn-primary rounded-lg text-sm"
+                          >
+                            Set Income
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                      <div className="stat-card rounded-xl p-6">
+                        <div className="text-xs text-slate-400 mb-2 uppercase tracking-wide">Baseline</div>
+                        <div className="text-3xl font-semibold mono">${monthlyBaseline.toFixed(0)}</div>
+                        <div className="text-xs text-slate-500 mt-1">{ongoingBills.length} ongoing</div>
+                      </div>
+                      
+                      <div className="stat-card rounded-xl p-6">
+                        <div className="text-xs text-slate-400 mb-2 uppercase tracking-wide">Current Total</div>
+                        <div className="text-3xl font-semibold mono">${totalMonthly.toFixed(0)}</div>
+                        <div className="text-xs text-slate-500 mt-1">+${finiteTotal.toFixed(0)} temp</div>
+                      </div>
+                      
+                      <div className="stat-card rounded-xl p-6">
+                        <div className="text-xs text-slate-400 mb-2 uppercase tracking-wide">Per Week</div>
+                        <div className="text-3xl font-semibold mono">${avgPerWeek.toFixed(0)}</div>
+                      </div>
+                      
+                      <div className="stat-card rounded-xl p-6">
+                        <div className="text-xs text-slate-400 mb-2 uppercase tracking-wide">Ending Soon</div>
+                        <div className="text-3xl font-semibold mono">{endingSoon}</div>
+                        <div className="text-xs text-slate-500 mt-1">≤3 payments</div>
+                      </div>
+                    </div>
+
+                    <div className="stat-card rounded-xl p-4 mb-6">
+                      <div className="flex flex-col md:flex-row gap-3">
+                        <input
+                          type="text"
+                          placeholder="Search bills..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="flex-1 px-4 py-2 bg-slate-700/50 rounded-lg border border-slate-600 focus:border-sky-500 outline-none text-white placeholder-slate-500"
+                        />
+                        <select
+                          value={filterCategory}
+                          onChange={(e) => setFilterCategory(e.target.value)}
+                          className="px-4 py-2 bg-slate-700/50 rounded-lg border border-slate-600 focus:border-sky-500 outline-none text-white"
+                        >
+                          <option value="all">All Categories</option>
+                          {Object.entries(CATEGORIES).map(([k, v]) => (
+                            <option key={k} value={k}>{v.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="mb-6">
+                      <button
+                        onClick={() => {
+                          setIsAddingBill(true);
+                          setEditingBill(null);
+                        }}
+                        className="px-6 py-2.5 btn-primary rounded-lg font-medium transition-all text-sm"
+                      >
+                        + Add Bill
+                      </button>
+                    </div>
+
+                    <div className="flex gap-2 mb-6 border-b border-slate-700 overflow-x-auto">
+                      {['forecast', 'timeline', 'calendar', 'list'].map(view => (
+                        <button
+                          key={view}
+                          onClick={() => setSelectedView(view)}
+                          className={`px-6 py-3 font-medium transition-all border-b-2 whitespace-nowrap ${
+                            selectedView === view
+                              ? 'border-sky-500 text-white'
+                              : 'border-transparent text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          {view.charAt(0).toUpperCase() + view.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+
+                    {selectedView === 'forecast' && (
+                      <div className="space-y-6">
+                        <div className="stat-card rounded-xl p-8">
+                          <h2 className="text-xl font-medium mb-6">6-Month Forecast</h2>
+                          <div className="space-y-4">
+                            {forecast.map((m, i) => (
+                              <div key={i}>
+                                <div className="flex justify-between mb-2">
+                                  <div>
+                                    <div className="font-medium">{m.date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</div>
+                                    <div className="text-sm text-slate-400">${m.ongoing.toFixed(0)} ongoing + ${m.finite.toFixed(0)} temp</div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-2xl font-bold mono">${m.total.toFixed(0)}</div>
+                                    {monthlyIncome > 0 && (
+                                      <div className={`text-sm ${m.net >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                        {m.net >= 0 ? '+' : ''}{m.net.toFixed(0)} left
+                                      </div>
+                                    )}
+                                    {i > 0 && !monthlyIncome && (
+                                      <div className={`text-sm ${m.total < forecast[i-1].total ? 'text-green-400' : m.total > forecast[i-1].total ? 'text-red-400' : 'text-slate-400'}`}>
+                                        {m.total < forecast[i-1].total ? '↓' : m.total > forecast[i-1].total ? '↑' : '→'} ${Math.abs(m.total - forecast[i-1].total).toFixed(0)}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="h-2 bg-slate-700/30 rounded-full overflow-hidden">
+                                  <div className="h-full bg-sky-500" style={{ width: `${(m.total / Math.max(...forecast.map(x => x.total))) * 100}%` }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {finiteBills.filter(b => b.paymentsRemaining && b.paymentsRemaining <= 6).length > 0 && (
+                          <div className="stat-card rounded-xl p-8">
+                            <h3 className="text-lg font-medium mb-4">Upcoming Changes</h3>
+                            <div className="space-y-3">
+                              {finiteBills
+                                .filter(b => b.paymentsRemaining && b.paymentsRemaining <= 6)
+                                .sort((a, b) => a.paymentsRemaining - b.paymentsRemaining)
+                                .map(b => (
+                                  <div key={b.id} className="flex justify-between p-3 bg-slate-700/30 rounded-lg">
+                                    <div>
+                                      <div className="font-medium">{b.name}</div>
+                                      <div className="text-sm text-slate-400">{b.paymentsRemaining} left</div>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className="font-semibold mono">${b.amount.toFixed(2)}</div>
+                                      <div className="text-sm text-green-400">Save ${getMonthlyEquivalent(b.amount, b.frequency).toFixed(0)}/mo</div>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {selectedView === 'timeline' && (
+                      <div className="stat-card rounded-xl p-8 mb-8">
+                        <h2 className="text-xl font-medium mb-6">Payment Timeline</h2>
+                        <div className="space-y-4">
+                          {monthlyBills.map((bill, idx) => (
+                            <div key={bill.id} className="timeline-bar" style={{animationDelay: `${idx * 0.05}s`}}>
+                              <div className="flex items-start gap-4">
+                                <div className="mono text-sm text-slate-500 w-12 pt-1">Day {bill.day}</div>
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="font-medium">{bill.name}</span>
+                                      <span 
+                                        className="badge" 
+                                        style={{
+                                          backgroundColor: CATEGORIES[bill.category]?.color + '30',
+                                          color: CATEGORIES[bill.category]?.color
+                                        }}
+                                      >
+                                        {CATEGORIES[bill.category]?.name}
+                                      </span>
+                                      {bill.type === 'fixed' && bill.paymentsRemaining && (
+                                        <span className="badge" style={{backgroundColor: '#fbbf2420', color: '#fbbf24'}}>
+                                          {bill.paymentsRemaining} of {bill.paymentsTotal}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="mono font-semibold">${bill.amount.toFixed(2)}</span>
+                                  </div>
+                                  <div className="text-xs text-slate-500 mb-2">{FREQUENCIES[bill.frequency]}</div>
+                                  {bill.paymentsRemaining && bill.paymentsTotal && (
+                                    <div className="w-full bg-slate-700/30 rounded-full h-1.5 overflow-hidden mb-2">
+                                      <div
+                                        className="h-full bg-green-500 rounded-full"
+                                        style={{ width: `${((bill.paymentsTotal - bill.paymentsRemaining) / bill.paymentsTotal) * 100}%` }}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  {bill.paymentsRemaining > 0 && (
+                                    <button
+                                      onClick={() => markPaid(bill.id)}
+                                      className="p-2 bg-green-900/20 rounded hover:bg-green-900/30 transition-all text-sm text-green-400"
+                                      title="Mark as paid"
+                                    >
+                                      ✓
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => startEdit(bill)}
+                                    className="p-2 bg-slate-700/50 rounded hover:bg-slate-700 transition-all text-sm"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => setDeleteConfirm(bill.id)}
+                                    className="p-2 bg-red-900/20 rounded hover:bg-red-900/30 transition-all text-sm text-red-400"
+                                  >
+                                    Del
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedView === 'calendar' && (
+                      <div className="stat-card rounded-xl p-8 mb-8">
+                        <h2 className="text-xl font-medium mb-6">Monthly Calendar</h2>
+                        <div className="grid grid-cols-7 gap-3">
+                          {Array.from({ length: 31 }, (_, i) => i + 1).map(day => {
+                            const dayBills = monthlyBills.filter(b => b.day === day);
+                            const dayTotal = dayBills.reduce((sum, b) => sum + b.amount, 0);
+                            const hasPayments = dayBills.length > 0;
+                            
+                            return (
+                              <div
+                                key={day}
+                                className={`card rounded-lg p-3 ${
+                                  hasPayments ? 'bg-sky-900/20 border-sky-800/30' : 'bg-slate-800/20'
+                                }`}
+                              >
+                                <div className="mono text-sm text-slate-400 mb-2">{day}</div>
+                                {hasPayments && (
+                                  <>
+                                    <div className="text-xs text-slate-500 mb-1">
+                                      {dayBills.length} {dayBills.length === 1 ? 'bill' : 'bills'}
+                                    </div>
+                                    <div className="mono text-sm font-semibold">${dayTotal.toFixed(2)}</div>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedView === 'list' && (
+                      <div className="stat-card rounded-xl p-8 mb-8">
+                        <h2 className="text-xl font-medium mb-6">All Bills</h2>
+                        <div className="space-y-3">
+                          {monthlyBills.map((bill) => (
+                            <div key={bill.id} className="card rounded-lg p-5">
+                              <div className="flex items-start justify-between gap-4 flex-wrap md:flex-nowrap">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                    <div className="font-medium text-lg">{bill.name}</div>
+                                    <span 
+                                      className="badge" 
+                                      style={{
+                                        backgroundColor: CATEGORIES[bill.category]?.color + '30',
+                                        color: CATEGORIES[bill.category]?.color
+                                      }}
+                                    >
+                                      {CATEGORIES[bill.category]?.name}
+                                    </span>
+                                    {bill.type === 'fixed' && bill.paymentsRemaining && (
+                                      <span className="badge" style={{backgroundColor: '#fbbf2420', color: '#fbbf24'}}>
+                                        {bill.paymentsRemaining}/{bill.paymentsTotal} left
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-slate-400">
+                                    {BILL_TYPES[bill.type]} • {FREQUENCIES[bill.frequency]} • Day {bill.day}
+                                  </div>
+                                  {bill.notes && (
+                                    <div className="text-sm text-slate-500 mt-2">{bill.notes}</div>
+                                  )}
+                                  {bill.paymentsRemaining && bill.paymentsTotal && (
+                                    <div className="mt-3">
+                                      <div className="w-full bg-slate-700/30 rounded-full h-2 overflow-hidden">
+                                        <div
+                                          className="h-full bg-green-500 rounded-full"
+                                          style={{ width: `${((bill.paymentsTotal - bill.paymentsRemaining) / bill.paymentsTotal) * 100}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex items-start gap-4">
+                                  <div className="text-right">
+                                    <div className="mono text-2xl font-semibold">${bill.amount.toFixed(2)}</div>
+                                    {bill.frequency !== 'monthly' && (
+                                      <div className="text-sm text-slate-500">~${getMonthlyEquivalent(bill.amount, bill.frequency).toFixed(0)}/mo</div>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-2">
+                                    {bill.paymentsRemaining > 0 && (
+                                      <button
+                                        onClick={() => markPaid(bill.id)}
+                                        className="px-3 py-1.5 bg-green-900/20 rounded hover:bg-green-900/30 transition-all text-sm text-green-400 whitespace-nowrap"
+                                      >
+                                        Mark Paid
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => startEdit(bill)}
+                                      className="px-3 py-1.5 bg-slate-700/50 rounded hover:bg-slate-700 transition-all text-sm"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={() => setDeleteConfirm(bill.id)}
+                                      className="px-3 py-1.5 bg-red-900/20 rounded hover:bg-red-900/30 transition-all text-sm text-red-400"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {bills.length >= 3 && (
+                      <div className="stat-card rounded-xl p-8">
+                        <h2 className="text-xl font-medium mb-6">Insights</h2>
+                        
+                        <div className="space-y-6">
+                          {heavyPeriods.length > 0 && (
+                            <div className="p-5 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                              <h3 className="font-medium text-orange-400 mb-3">Heavy Payment Periods</h3>
+                              <div className="space-y-2 text-sm">
+                                {heavyPeriods.map((period, idx) => (
+                                  <div key={idx} className="text-slate-300">
+                                    <span className="mono text-orange-300">Days {period.start}-{period.start + 3}:</span>{' '}
+                                    {period.count} bills, ${period.total.toFixed(2)} total
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="p-5 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                            <h3 className="font-medium text-blue-400 mb-4">Payment Distribution</h3>
+                            <div className="grid grid-cols-2 gap-6 text-sm">
+                              <div>
+                                <div className="text-slate-400 mb-2">First Half (1-15)</div>
+                                <div className="mono text-2xl font-semibold">
+                                  ${monthlyBills.filter(b => b.day <= 15).reduce((sum, b) => sum + b.amount, 0).toFixed(2)}
+                                </div>
+                                <div className="text-slate-500 text-xs mt-1">
+                                  {monthlyBills.filter(b => b.day <= 15).length} bills
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-slate-400 mb-2">Second Half (16-31)</div>
+                                <div className="mono text-2xl font-semibold">
+                                  ${monthlyBills.filter(b => b.day > 15).reduce((sum, b) => sum + b.amount, 0).toFixed(2)}
+                                </div>
+                                <div className="text-slate-500 text-xs mt-1">
+                                  {monthlyBills.filter(b => b.day > 15).length} bills
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {deleteConfirm && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                  <div className="stat-card rounded-xl p-6 max-w-md w-full">
+                    <h3 className="text-xl font-semibold mb-3">Delete Bill?</h3>
+                    <p className="text-slate-400 mb-6">
+                      Are you sure you want to delete "{bills.find(b => b.id === deleteConfirm)?.name}"? This can't be undone.
+                    </p>
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => deleteBill(deleteConfirm)}
+                        className="flex-1 px-4 py-2.5 bg-red-600 rounded-lg hover:bg-red-700 transition-all font-medium"
+                      >
+                        Delete
+                      </button>
+                      <button 
+                        onClick={() => setDeleteConfirm(null)}
+                        className="flex-1 px-4 py-2.5 bg-slate-700 rounded-lg hover:bg-slate-600 transition-all"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {showIncomeModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                  <div className="stat-card rounded-xl p-6 max-w-md w-full">
+                    <h3 className="text-xl font-semibold mb-4">Set Your Income</h3>
+                    <div className="space-y-4 mb-6">
+                      <div>
+                        <label className="block text-sm text-slate-400 mb-2">Income Amount</label>
+                        <input
+                          type="number"
+                          placeholder="3500"
+                          value={income.amount}
+                          onChange={(e) => setIncome({...income, amount: e.target.value})}
+                          className="w-full px-4 py-2.5 bg-slate-700/50 rounded-lg border border-slate-600 focus:border-sky-500 outline-none text-white placeholder-slate-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-slate-400 mb-2">Pay Period</label>
+                        <select
+                          value={income.payPeriod}
+                          onChange={(e) => setIncome({...income, payPeriod: e.target.value})}
+                          className="w-full px-4 py-2.5 bg-slate-700/50 rounded-lg border border-slate-600 focus:border-sky-500 outline-none text-white"
+                        >
+                          {Object.entries(PAY_PERIODS).map(([k, v]) => (
+                            <option key={k} value={k}>{v}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {income.amount && (
+                        <div className="p-3 bg-sky-900/20 border border-sky-800/30 rounded-lg">
+                          <div className="text-sm text-slate-400 mb-1">Monthly Equivalent</div>
+                          <div className="text-2xl font-semibold mono text-green-400">${getMonthlyIncome().toFixed(0)}</div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => setShowIncomeModal(false)}
+                        className="flex-1 px-4 py-2.5 btn-primary rounded-lg font-medium"
+                      >
+                        Save
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setShowIncomeModal(false);
+                          setIncome({ amount: '', payPeriod: 'monthly' });
+                        }}
+                        className="px-4 py-2.5 bg-slate-700 rounded-lg hover:bg-slate-600 transition-all"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        ReactDOM.render(<BillVisualizerApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
