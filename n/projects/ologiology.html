@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ologiology — A Cartography of Human Curiosity</title>
+<meta name="description" content="An interactive atlas of every -ology: 400+ fields of study mapped as a living constellation of human knowledge.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body, #root { width: 100%; height: 100%; overflow: hidden; }
+
+  body {
+    background: #08080c;
+    color: #e8dcc8;
+    font-family: 'EB Garamond', 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* noise grain overlay */
+  #root::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.025;
+    z-index: 9999;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+  }
+
+  ::selection { background: rgba(212, 175, 55, 0.3); color: #fff; }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(232, 220, 200, 0.12); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(232, 220, 200, 0.2); }
+
+  input::placeholder { color: #5a5248 !important; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes gentlePulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  @keyframes introFade {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  .category-pill {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 20px;
+    padding: 4px 13px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    color: #4a443a;
+    font-size: 11.5px;
+    font-family: 'EB Garamond', Georgia, serif;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    user-select: none;
+    line-height: 1.6;
+  }
+  .category-pill:hover { border-color: rgba(255,255,255,0.15); }
+  .category-pill.active { border-color: rgba(255,255,255,0.15); }
+
+  .zoom-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(12,12,18,0.85);
+    backdrop-filter: blur(12px);
+    color: #8a7e6b;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-family: 'EB Garamond', serif;
+  }
+  .zoom-btn:hover {
+    border-color: rgba(255,255,255,0.2);
+    color: #e8dcc8;
+    background: rgba(20,20,30,0.9);
+  }
+
+  .detail-panel {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10, 10, 16, 0.92);
+    backdrop-filter: blur(24px);
+    border-radius: 12px;
+    padding: 22px 28px 20px;
+    max-width: 520px;
+    width: calc(100% - 48px);
+    z-index: 20;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .panel-glass {
+    background: rgba(10, 10, 16, 0.88);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+  }
+
+  .clickable-ology {
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+    transition: color 0.15s;
+  }
+  .clickable-ology:hover { text-decoration-style: solid; }
+
+  .intro-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, rgba(8,8,12,0.97) 0%, #08080c 70%);
+    animation: fadeIn 0.5s ease;
+  }
+
+  .about-panel {
+    position: fixed;
+    top: 0; right: 0;
+    width: min(420px, 90vw);
+    height: 100%;
+    z-index: 50;
+    background: rgba(10, 10, 16, 0.95);
+    backdrop-filter: blur(30px);
+    border-left: 1px solid rgba(255,255,255,0.06);
+    padding: 40px 32px;
+    overflow-y: auto;
+    animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ornament {
+    text-align: center;
+    color: #3d3830;
+    font-size: 14px;
+    letter-spacing: 8px;
+    user-select: none;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .stat-row:last-child { border-bottom: none; }
+
+  @media (max-width: 768px) {
+    .header-bar { padding: 16px 16px 0 !important; }
+    .category-bar { padding: 10px 16px !important; }
+    .detail-panel { width: calc(100% - 24px); padding: 18px 20px 16px; bottom: 12px; }
+    .zoom-controls { bottom: auto !important; top: 70px !important; }
+  }
+
+  @media (max-width: 480px) {
+    .category-pill { font-size: 10px; padding: 3px 9px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+// ═══════════════════════════════════════════════════════════════
+//  DATA — 400+ ologies, exhaustively compiled and categorized
+// ═══════════════════════════════════════════════════════════════
+
+const OLOGIES = [
+  // ── LIFE SCIENCES ──────────────────────────────────────────
+  { id: "biology", label: "Biology", category: "Life Sciences", desc: "The study of living organisms and vital processes.", parent: null, obscurity: 0 },
+  { id: "abiology", label: "Abiology", category: "Life Sciences", desc: "The study of nonliving or inorganic things.", parent: "biology", obscurity: 4 },
+  { id: "actinobiology", label: "Actinobiology", category: "Life Sciences", desc: "The study of the effects of radiation upon living organisms.", parent: "biology", obscurity: 4 },
+  { id: "aerobiology", label: "Aerobiology", category: "Life Sciences", desc: "The study of organic particles, such as pollen and spores, transported by the atmosphere.", parent: "biology", obscurity: 3 },
+  { id: "agrobiology", label: "Agrobiology", category: "Life Sciences", desc: "The study of plant nutrition and growth as they relate to soil conditions.", parent: "biology", obscurity: 3 },
+  { id: "astrobiology", label: "Astrobiology", category: "Life Sciences", desc: "The study of the origin of life and the possibility of life elsewhere in the universe.", parent: "biology", obscurity: 1 },
+  { id: "bioecology", label: "Bioecology", category: "Life Sciences", desc: "The study of the interaction between living organisms and their environment.", parent: "ecology", obscurity: 3 },
+  { id: "biospeleology", label: "Biospeleology", category: "Life Sciences", desc: "The study of organisms that live in caves and subterranean habitats.", parent: "biology", obscurity: 4 },
+  { id: "chronobiology", label: "Chronobiology", category: "Life Sciences", desc: "The study of biological rhythms and time-related processes in living things.", parent: "biology", obscurity: 2 },
+  { id: "cryobiology", label: "Cryobiology", category: "Life Sciences", desc: "The study of the effects of very low temperatures on living organisms.", parent: "biology", obscurity: 3 },
+  { id: "cytology", label: "Cytology", category: "Life Sciences", desc: "The study of cells, their structure, function, and chemistry.", parent: "biology", obscurity: 1 },
+  { id: "cytomorphology", label: "Cytomorphology", category: "Life Sciences", desc: "The study of the form and structure of cells.", parent: "cytology", obscurity: 3 },
+  { id: "ecology", label: "Ecology", category: "Life Sciences", desc: "The study of ecosystems and the interactions between organisms and their environment.", parent: "biology", obscurity: 0 },
+  { id: "autecology", label: "Autecology", category: "Life Sciences", desc: "The study of the ecology of individual species in isolation.", parent: "ecology", obscurity: 3 },
+  { id: "synecology", label: "Synecology", category: "Life Sciences", desc: "The study of ecological interrelationships among communities of organisms.", parent: "ecology", obscurity: 3 },
+  { id: "ecohydrology", label: "Ecohydrology", category: "Life Sciences", desc: "The study of interactions between organisms and the water cycle.", parent: "ecology", obscurity: 3 },
+  { id: "paleoecology", label: "Paleoecology", category: "Life Sciences", desc: "The study of prehistoric environments through the fossil record.", parent: "ecology", obscurity: 2 },
+  { id: "embryology", label: "Embryology", category: "Life Sciences", desc: "The study of embryos and their development from fertilization to birth.", parent: "biology", obscurity: 1 },
+  { id: "enzymology", label: "Enzymology", category: "Life Sciences", desc: "The study of enzymes, their kinetics, structure, and function.", parent: "biology", obscurity: 2 },
+  { id: "ethology", label: "Ethology", category: "Life Sciences", desc: "The scientific study of animal behavior, especially in natural conditions.", parent: "biology", obscurity: 1 },
+  { id: "exobiology", label: "Exobiology", category: "Life Sciences", desc: "The study of the possibility and nature of life in outer space.", parent: "astrobiology", obscurity: 2 },
+  { id: "geobiology", label: "Geobiology", category: "Life Sciences", desc: "The study of how the biosphere interacts with the lithosphere and atmosphere.", parent: "biology", obscurity: 3 },
+  { id: "histology", label: "Histology", category: "Life Sciences", desc: "The study of the microscopic anatomy of tissues in plants and animals.", parent: "biology", obscurity: 1 },
+  { id: "karyology", label: "Karyology", category: "Life Sciences", desc: "The study of cell nuclei and karyotypes, especially chromosomes.", parent: "cytology", obscurity: 3 },
+  { id: "limnology", label: "Limnology", category: "Life Sciences", desc: "The study of inland freshwater ecosystems — lakes, rivers, ponds, and wetlands.", parent: "ecology", obscurity: 2 },
+  { id: "microbiology", label: "Microbiology", category: "Life Sciences", desc: "The study of microscopic organisms, including bacteria, viruses, and fungi.", parent: "biology", obscurity: 0 },
+  { id: "morphology_bio", label: "Morphology", category: "Life Sciences", desc: "The study of the form, shape, and structure of organisms.", parent: "biology", obscurity: 1 },
+  { id: "paleobiology", label: "Paleobiology", category: "Life Sciences", desc: "The study of prehistoric life through biological and paleontological methods.", parent: "biology", obscurity: 1 },
+  { id: "paleontology", label: "Paleontology", category: "Life Sciences", desc: "The study of fossils and the history of life on Earth.", parent: "paleobiology", obscurity: 0 },
+  { id: "paleoanthropology", label: "Paleoanthropology", category: "Life Sciences", desc: "The study of prehistoric human ancestors and their origins.", parent: "paleontology", obscurity: 1 },
+  { id: "paleozoology", label: "Paleozoology", category: "Life Sciences", desc: "The study of prehistoric animal life through the fossil record.", parent: "paleontology", obscurity: 2 },
+  { id: "paleobotany", label: "Paleobotany", category: "Life Sciences", desc: "The study of ancient and fossil plants.", parent: "paleontology", obscurity: 2 },
+  { id: "palynology", label: "Palynology", category: "Life Sciences", desc: "The study of pollen grains and spores, both living and fossil.", parent: "biology", obscurity: 3 },
+  { id: "parasitology", label: "Parasitology", category: "Life Sciences", desc: "The study of parasites and their relationship with host organisms.", parent: "biology", obscurity: 1 },
+  { id: "phenology", label: "Phenology", category: "Life Sciences", desc: "The study of periodic biological phenomena, such as migration and flowering.", parent: "biology", obscurity: 2 },
+  { id: "physiology", label: "Physiology", category: "Life Sciences", desc: "The study of the normal functions and mechanisms of living organisms.", parent: "biology", obscurity: 0 },
+  { id: "ecophysiology", label: "Ecophysiology", category: "Life Sciences", desc: "The study of how organisms' physical functions adapt to environmental conditions.", parent: "physiology", obscurity: 3 },
+  { id: "electrophysiology", label: "Electrophysiology", category: "Life Sciences", desc: "The study of electrical properties and phenomena in living cells and tissues.", parent: "physiology", obscurity: 2 },
+  { id: "neurophysiology", label: "Neurophysiology", category: "Life Sciences", desc: "The study of the functions and mechanisms of the nervous system.", parent: "physiology", obscurity: 1 },
+  { id: "psychophysiology", label: "Psychophysiology", category: "Life Sciences", desc: "The study of the physiological bases of psychological processes.", parent: "physiology", obscurity: 2 },
+  { id: "sociobiology", label: "Sociobiology", category: "Life Sciences", desc: "The study of the biological and evolutionary basis of social behavior.", parent: "biology", obscurity: 2 },
+  { id: "xenobiology", label: "Xenobiology", category: "Life Sciences", desc: "The study of hypothetical nonterrestrial or synthetic life forms.", parent: "biology", obscurity: 3 },
+  { id: "photobiology", label: "Photobiology", category: "Life Sciences", desc: "The study of the effects of light on living organisms.", parent: "biology", obscurity: 3 },
+  { id: "radiobiology", label: "Radiobiology", category: "Life Sciences", desc: "The study of the action of ionizing radiation on living things.", parent: "biology", obscurity: 2 },
+  { id: "thanatology", label: "Thanatology", category: "Life Sciences", desc: "The scientific study of death, dying, and the social and emotional aspects of terminal illness.", parent: "biology", obscurity: 2 },
+  { id: "trophology", label: "Trophology", category: "Life Sciences", desc: "The study of nutrition and food combining for health.", parent: "biology", obscurity: 4 },
+  { id: "organology_bio", label: "Organology", category: "Life Sciences", desc: "The study of the organs of plants and animals.", parent: "biology", obscurity: 3 },
+  { id: "abiogenology", label: "Abiogenology", category: "Life Sciences", desc: "The study of the origin of life from non-living matter.", parent: "astrobiology", obscurity: 4 },
+
+  // ── ZOOLOGY ────────────────────────────────────────────────
+  { id: "zoology", label: "Zoology", category: "Zoology", desc: "The scientific study of animals and animal life.", parent: "biology", obscurity: 0 },
+  { id: "acarology", label: "Acarology", category: "Zoology", desc: "The study of ticks and mites (order Acari).", parent: "zoology", obscurity: 3 },
+  { id: "apiology", label: "Apiology", category: "Zoology", desc: "The study of honey bees.", parent: "entomology", obscurity: 3 },
+  { id: "arachnology", label: "Arachnology", category: "Zoology", desc: "The study of spiders and related arachnids.", parent: "zoology", obscurity: 2 },
+  { id: "astacology", label: "Astacology", category: "Zoology", desc: "The study of crawfish and freshwater crayfish.", parent: "carcinology", obscurity: 4 },
+  { id: "batrachology", label: "Batrachology", category: "Zoology", desc: "The study of frogs and toads.", parent: "herpetology", obscurity: 4 },
+  { id: "carcinology", label: "Carcinology", category: "Zoology", desc: "The study of crustaceans.", parent: "zoology", obscurity: 3 },
+  { id: "cetology", label: "Cetology", category: "Zoology", desc: "The study of whales, dolphins, and porpoises.", parent: "mammalogy", obscurity: 2 },
+  { id: "coleopterology", label: "Coleopterology", category: "Zoology", desc: "The study of beetles — the most species-rich order of insects.", parent: "entomology", obscurity: 3 },
+  { id: "conchology", label: "Conchology", category: "Zoology", desc: "The study of mollusk shells and their classification.", parent: "malacology", obscurity: 3 },
+  { id: "cryptozoology", label: "Cryptozoology", category: "Zoology", desc: "The search for animals whose existence is unproven — Bigfoot, Loch Ness, and the like.", parent: "zoology", obscurity: 2 },
+  { id: "cynology", label: "Cynology", category: "Zoology", desc: "The study of dogs, including breeds, behavior, and genetics.", parent: "mammalogy", obscurity: 3 },
+  { id: "dipterology", label: "Dipterology", category: "Zoology", desc: "The study of flies (order Diptera).", parent: "entomology", obscurity: 3 },
+  { id: "entomology", label: "Entomology", category: "Zoology", desc: "The study of insects.", parent: "zoology", obscurity: 1 },
+  { id: "felinology", label: "Felinology", category: "Zoology", desc: "The study of domestic and wild cats.", parent: "mammalogy", obscurity: 3 },
+  { id: "helminthology", label: "Helminthology", category: "Zoology", desc: "The study of parasitic worms (helminths).", parent: "zoology", obscurity: 3 },
+  { id: "herpetology", label: "Herpetology", category: "Zoology", desc: "The study of reptiles and amphibians.", parent: "zoology", obscurity: 1 },
+  { id: "hippology", label: "Hippology", category: "Zoology", desc: "The study of horses.", parent: "mammalogy", obscurity: 3 },
+  { id: "ichthyology", label: "Ichthyology", category: "Zoology", desc: "The study of fish — their biology, taxonomy, and ecology.", parent: "zoology", obscurity: 2 },
+  { id: "lepidopterology", label: "Lepidopterology", category: "Zoology", desc: "The study of butterflies and moths.", parent: "entomology", obscurity: 2 },
+  { id: "malacology", label: "Malacology", category: "Zoology", desc: "The study of mollusks — snails, slugs, clams, octopuses.", parent: "zoology", obscurity: 2 },
+  { id: "mammalogy", label: "Mammalogy", category: "Zoology", desc: "The study of mammals.", parent: "zoology", obscurity: 2 },
+  { id: "myrmecology", label: "Myrmecology", category: "Zoology", desc: "The study of ants.", parent: "entomology", obscurity: 3 },
+  { id: "nematology", label: "Nematology", category: "Zoology", desc: "The study of roundworms (nematodes).", parent: "zoology", obscurity: 3 },
+  { id: "odonatology", label: "Odonatology", category: "Zoology", desc: "The study of dragonflies and damselflies.", parent: "entomology", obscurity: 4 },
+  { id: "oology", label: "Oology", category: "Zoology", desc: "The study of eggs, especially birds' eggs.", parent: "ornithology", obscurity: 4 },
+  { id: "ophiology", label: "Ophiology", category: "Zoology", desc: "The study of snakes.", parent: "herpetology", obscurity: 4 },
+  { id: "ornithology", label: "Ornithology", category: "Zoology", desc: "The study of birds.", parent: "zoology", obscurity: 1 },
+  { id: "orthopterology", label: "Orthopterology", category: "Zoology", desc: "The study of grasshoppers, crickets, and locusts.", parent: "entomology", obscurity: 4 },
+  { id: "primatology", label: "Primatology", category: "Zoology", desc: "The study of primates — monkeys, apes, and prosimians.", parent: "mammalogy", obscurity: 1 },
+  { id: "heteroptology", label: "Heteroptology", category: "Zoology", desc: "The study of true bugs (suborder Heteroptera).", parent: "entomology", obscurity: 5 },
+  { id: "vermeology", label: "Vermeology", category: "Zoology", desc: "The study of worms.", parent: "zoology", obscurity: 4 },
+  { id: "zoopathology", label: "Zoopathology", category: "Zoology", desc: "The study of animal diseases.", parent: "zoology", obscurity: 3 },
+  { id: "zoopsychology", label: "Zoopsychology", category: "Zoology", desc: "The study of mental processes and behavior in animals.", parent: "zoology", obscurity: 3 },
+  { id: "zooarchaeology", label: "Zooarchaeology", category: "Zoology", desc: "The study of animal remains found at archaeological sites.", parent: "zoology", obscurity: 2 },
+  { id: "saurology", label: "Saurology", category: "Zoology", desc: "The study of lizards.", parent: "herpetology", obscurity: 4 },
+  { id: "nidology", label: "Nidology", category: "Zoology", desc: "The study of birds' nests.", parent: "ornithology", obscurity: 4 },
+  { id: "theriogenology", label: "Theriogenology", category: "Zoology", desc: "The study of animal reproduction.", parent: "zoology", obscurity: 3 },
+  { id: "neossology", label: "Neossology", category: "Zoology", desc: "The study of young birds and nestlings.", parent: "ornithology", obscurity: 5 },
+  { id: "therology", label: "Therology", category: "Zoology", desc: "The study of wild mammals.", parent: "mammalogy", obscurity: 4 },
+  { id: "testaceology", label: "Testaceology", category: "Zoology", desc: "The study of animals with shells — mollusks and crustaceans.", parent: "zoology", obscurity: 5 },
+  { id: "limacology", label: "Limacology", category: "Zoology", desc: "The study of slugs.", parent: "malacology", obscurity: 5 },
+  { id: "thremmatology", label: "Thremmatology", category: "Zoology", desc: "The science of breeding and domesticating animals and plants.", parent: "zoology", obscurity: 4 },
+  { id: "chelonology", label: "Chelonology", category: "Zoology", desc: "The study of turtles and tortoises.", parent: "herpetology", obscurity: 4 },
+  { id: "spongiology", label: "Spongiology", category: "Zoology", desc: "The study of sponges (phylum Porifera).", parent: "zoology", obscurity: 5 },
+
+  // ── PLANT SCIENCES ─────────────────────────────────────────
+  { id: "phytology", label: "Phytology", category: "Plant Sciences", desc: "The study of plants; another name for botany.", parent: "biology", obscurity: 2 },
+  { id: "agrostology", label: "Agrostology", category: "Plant Sciences", desc: "The study of grasses.", parent: "phytology", obscurity: 3 },
+  { id: "algology", label: "Algology", category: "Plant Sciences", desc: "The study of algae.", parent: "phytology", obscurity: 2 },
+  { id: "bryology", label: "Bryology", category: "Plant Sciences", desc: "The study of mosses, liverworts, and hornworts.", parent: "phytology", obscurity: 3 },
+  { id: "carpology", label: "Carpology", category: "Plant Sciences", desc: "The study of fruits and seeds.", parent: "phytology", obscurity: 3 },
+  { id: "dendrology", label: "Dendrology", category: "Plant Sciences", desc: "The study of trees and woody plants.", parent: "phytology", obscurity: 2 },
+  { id: "herbology", label: "Herbology", category: "Plant Sciences", desc: "The study of the therapeutic and medicinal use of plants.", parent: "phytology", obscurity: 2 },
+  { id: "lichenology", label: "Lichenology", category: "Plant Sciences", desc: "The study of lichens — symbiotic organisms of fungi and algae.", parent: "phytology", obscurity: 3 },
+  { id: "mycology", label: "Mycology", category: "Plant Sciences", desc: "The study of fungi — mushrooms, molds, and yeasts.", parent: "biology", obscurity: 1 },
+  { id: "phycology", label: "Phycology", category: "Plant Sciences", desc: "The scientific study of algae (synonym of algology).", parent: "phytology", obscurity: 2 },
+  { id: "phytopathology", label: "Phytopathology", category: "Plant Sciences", desc: "The study of plant diseases caused by pathogens and environmental conditions.", parent: "phytology", obscurity: 2 },
+  { id: "phytosociology", label: "Phytosociology", category: "Plant Sciences", desc: "The study of plant communities and their ecological relationships.", parent: "phytology", obscurity: 3 },
+  { id: "pomology", label: "Pomology", category: "Plant Sciences", desc: "The study of fruit cultivation and production.", parent: "phytology", obscurity: 3 },
+  { id: "pteridology", label: "Pteridology", category: "Plant Sciences", desc: "The study of ferns and related plants.", parent: "phytology", obscurity: 3 },
+  { id: "xylology", label: "Xylology", category: "Plant Sciences", desc: "The study of the structure and properties of wood.", parent: "dendrology", obscurity: 4 },
+  { id: "planktology", label: "Planktology", category: "Plant Sciences", desc: "The study of plankton — the drifting organisms of aquatic ecosystems.", parent: "biology", obscurity: 3 },
+  { id: "paleophytology", label: "Paleophytology", category: "Plant Sciences", desc: "The study of ancient and fossil plants.", parent: "paleobotany", obscurity: 4 },
+  { id: "sphagnology", label: "Sphagnology", category: "Plant Sciences", desc: "The study of peat moss (genus Sphagnum).", parent: "bryology", obscurity: 5 },
+  { id: "anthology", label: "Anthology", category: "Plant Sciences", desc: "The study of flowers — their structure, pollination, and classification.", parent: "phytology", obscurity: 3 },
+  { id: "rhodology", label: "Rhodology", category: "Plant Sciences", desc: "The study of roses.", parent: "phytology", obscurity: 4 },
+
+  // ── MICROBIOLOGY ───────────────────────────────────────────
+  { id: "bacteriology", label: "Bacteriology", category: "Microbiology", desc: "The study of bacteria — their structure, ecology, and pathology.", parent: "microbiology", obscurity: 1 },
+  { id: "virology", label: "Virology", category: "Microbiology", desc: "The study of viruses and viral diseases.", parent: "microbiology", obscurity: 0 },
+  { id: "protistology", label: "Protistology", category: "Microbiology", desc: "The study of protists — single-celled eukaryotic organisms.", parent: "microbiology", obscurity: 3 },
+  { id: "protozoology", label: "Protozoology", category: "Microbiology", desc: "The study of protozoa — single-celled animal-like organisms.", parent: "protistology", obscurity: 3 },
+
+  // ── MEDICAL SCIENCES ───────────────────────────────────────
+  { id: "pathology", label: "Pathology", category: "Medical Sciences", desc: "The study of the causes, mechanisms, and effects of disease.", parent: null, obscurity: 0 },
+  { id: "cytopathology", label: "Cytopathology", category: "Medical Sciences", desc: "The study of disease at the cellular level.", parent: "pathology", obscurity: 2 },
+  { id: "dermatopathology", label: "Dermatopathology", category: "Medical Sciences", desc: "The microscopic study of skin diseases.", parent: "dermatology", obscurity: 3 },
+  { id: "histopathology", label: "Histopathology", category: "Medical Sciences", desc: "The microscopic examination of diseased tissue.", parent: "pathology", obscurity: 2 },
+  { id: "neuropathology", label: "Neuropathology", category: "Medical Sciences", desc: "The study of diseases of the nervous system tissue.", parent: "pathology", obscurity: 2 },
+  { id: "psychopathology", label: "Psychopathology", category: "Medical Sciences", desc: "The study of mental disorders, their symptoms, and their origins.", parent: "pathology", obscurity: 1 },
+  { id: "adenology", label: "Adenology", category: "Medical Sciences", desc: "The study of glands.", parent: null, obscurity: 4 },
+  { id: "allergology", label: "Allergology", category: "Medical Sciences", desc: "The study of allergies and hypersensitivity reactions.", parent: null, obscurity: 2 },
+  { id: "andrology", label: "Andrology", category: "Medical Sciences", desc: "The study of male health, particularly the male reproductive system.", parent: null, obscurity: 2 },
+  { id: "anesthesiology", label: "Anesthesiology", category: "Medical Sciences", desc: "The medical specialty dealing with anesthesia and pain management.", parent: null, obscurity: 0 },
+  { id: "angiology", label: "Angiology", category: "Medical Sciences", desc: "The study of blood vessels and lymphatic vessels.", parent: null, obscurity: 3 },
+  { id: "arthrology", label: "Arthrology", category: "Medical Sciences", desc: "The study of joints and articulations.", parent: null, obscurity: 3 },
+  { id: "audiology", label: "Audiology", category: "Medical Sciences", desc: "The study of hearing, balance, and related disorders.", parent: null, obscurity: 1 },
+  { id: "balneology", label: "Balneology", category: "Medical Sciences", desc: "The study of therapeutic bathing and mineral springs.", parent: null, obscurity: 3 },
+  { id: "cardiology", label: "Cardiology", category: "Medical Sciences", desc: "The study of the heart and cardiovascular system.", parent: null, obscurity: 0 },
+  { id: "dermatology", label: "Dermatology", category: "Medical Sciences", desc: "The study of skin, its structure, and its diseases.", parent: null, obscurity: 0 },
+  { id: "diabetology", label: "Diabetology", category: "Medical Sciences", desc: "The study of diabetes mellitus.", parent: "endocrinology", obscurity: 2 },
+  { id: "endocrinology", label: "Endocrinology", category: "Medical Sciences", desc: "The study of the endocrine system and its hormones.", parent: null, obscurity: 1 },
+  { id: "epidemiology", label: "Epidemiology", category: "Medical Sciences", desc: "The study of the distribution and determinants of disease in populations.", parent: "pathology", obscurity: 0 },
+  { id: "fetology", label: "Fetology", category: "Medical Sciences", desc: "The study of the fetus during pregnancy.", parent: null, obscurity: 3 },
+  { id: "gastroenterology", label: "Gastroenterology", category: "Medical Sciences", desc: "The study of the digestive system and its disorders.", parent: null, obscurity: 0 },
+  { id: "gynecology", label: "Gynecology", category: "Medical Sciences", desc: "The study of the female reproductive system.", parent: null, obscurity: 0 },
+  { id: "hematology", label: "Hematology", category: "Medical Sciences", desc: "The study of blood and blood-forming organs.", parent: null, obscurity: 0 },
+  { id: "hepatology", label: "Hepatology", category: "Medical Sciences", desc: "The study of the liver, gallbladder, and biliary system.", parent: "gastroenterology", obscurity: 2 },
+  { id: "immunology", label: "Immunology", category: "Medical Sciences", desc: "The study of the immune system and immune responses.", parent: null, obscurity: 0 },
+  { id: "kinesiology", label: "Kinesiology", category: "Medical Sciences", desc: "The study of human movement and body mechanics.", parent: null, obscurity: 1 },
+  { id: "laryngology", label: "Laryngology", category: "Medical Sciences", desc: "The study of the larynx and its diseases.", parent: "otorhinolaryngology", obscurity: 3 },
+  { id: "lymphology", label: "Lymphology", category: "Medical Sciences", desc: "The study of the lymphatic system.", parent: null, obscurity: 3 },
+  { id: "myology", label: "Myology", category: "Medical Sciences", desc: "The study of muscles and muscle tissue.", parent: null, obscurity: 3 },
+  { id: "neonatology", label: "Neonatology", category: "Medical Sciences", desc: "The medical care and study of newborn infants.", parent: null, obscurity: 1 },
+  { id: "nephrology", label: "Nephrology", category: "Medical Sciences", desc: "The study of the kidneys and kidney diseases.", parent: null, obscurity: 1 },
+  { id: "neurology", label: "Neurology", category: "Medical Sciences", desc: "The study of the nervous system and its disorders.", parent: null, obscurity: 0 },
+  { id: "nosology", label: "Nosology", category: "Medical Sciences", desc: "The systematic classification of diseases.", parent: "pathology", obscurity: 3 },
+  { id: "odontology", label: "Odontology", category: "Medical Sciences", desc: "The study of teeth, their structure, development, and diseases.", parent: null, obscurity: 2 },
+  { id: "oncology", label: "Oncology", category: "Medical Sciences", desc: "The study and treatment of tumors and cancer.", parent: "pathology", obscurity: 0 },
+  { id: "ophthalmology", label: "Ophthalmology", category: "Medical Sciences", desc: "The study of the eyes and diseases of vision.", parent: null, obscurity: 0 },
+  { id: "osteology", label: "Osteology", category: "Medical Sciences", desc: "The study of the structure, function, and diseases of bones.", parent: null, obscurity: 2 },
+  { id: "otology", label: "Otology", category: "Medical Sciences", desc: "The study of the ear and its diseases.", parent: "otorhinolaryngology", obscurity: 2 },
+  { id: "otorhinolaryngology", label: "Otorhinolaryngology", category: "Medical Sciences", desc: "The study of ear, nose, and throat (ENT) disorders.", parent: null, obscurity: 1 },
+  { id: "perinatology", label: "Perinatology", category: "Medical Sciences", desc: "The study of the health of the fetus and infant around the time of birth.", parent: null, obscurity: 2 },
+  { id: "pharmacology", label: "Pharmacology", category: "Medical Sciences", desc: "The study of drugs — their composition, uses, and effects.", parent: null, obscurity: 0 },
+  { id: "posology", label: "Posology", category: "Medical Sciences", desc: "The study of the dosages of medicines and drugs.", parent: "pharmacology", obscurity: 4 },
+  { id: "psychopharmacology", label: "Psychopharmacology", category: "Medical Sciences", desc: "The study of drugs that affect mood, sensation, thinking, and behavior.", parent: "pharmacology", obscurity: 2 },
+  { id: "phlebology", label: "Phlebology", category: "Medical Sciences", desc: "The study of veins and venous diseases.", parent: null, obscurity: 3 },
+  { id: "proctology", label: "Proctology", category: "Medical Sciences", desc: "The study of the rectum, anus, and colon.", parent: null, obscurity: 2 },
+  { id: "pulmonology", label: "Pulmonology", category: "Medical Sciences", desc: "The study of the lungs and respiratory system.", parent: null, obscurity: 1 },
+  { id: "radiology", label: "Radiology", category: "Medical Sciences", desc: "The use of imaging technologies for medical diagnosis.", parent: null, obscurity: 0 },
+  { id: "rheumatology", label: "Rheumatology", category: "Medical Sciences", desc: "The study of rheumatic diseases affecting joints, muscles, and bones.", parent: null, obscurity: 1 },
+  { id: "rhinology", label: "Rhinology", category: "Medical Sciences", desc: "The study of the nose and nasal passages.", parent: "otorhinolaryngology", obscurity: 3 },
+  { id: "serology", label: "Serology", category: "Medical Sciences", desc: "The study of blood serum and immune responses.", parent: "hematology", obscurity: 2 },
+  { id: "splanchnology", label: "Splanchnology", category: "Medical Sciences", desc: "The study of the visceral organs.", parent: null, obscurity: 4 },
+  { id: "stomatology", label: "Stomatology", category: "Medical Sciences", desc: "The study of the mouth and oral diseases.", parent: null, obscurity: 3 },
+  { id: "symptomatology", label: "Symptomatology", category: "Medical Sciences", desc: "The study of symptoms as indicators of disease.", parent: "pathology", obscurity: 2 },
+  { id: "syndesmology", label: "Syndesmology", category: "Medical Sciences", desc: "The study of ligaments and joints.", parent: null, obscurity: 4 },
+  { id: "teratology", label: "Teratology", category: "Medical Sciences", desc: "The study of congenital malformations and developmental abnormalities.", parent: "pathology", obscurity: 2 },
+  { id: "tocology", label: "Tocology", category: "Medical Sciences", desc: "The study of childbirth and obstetrics.", parent: null, obscurity: 4 },
+  { id: "toxicology", label: "Toxicology", category: "Medical Sciences", desc: "The study of poisons, toxins, and their effects on living organisms.", parent: null, obscurity: 1 },
+  { id: "traumatology", label: "Traumatology", category: "Medical Sciences", desc: "The study of wounds, injuries, and their surgical treatment.", parent: null, obscurity: 2 },
+  { id: "urology", label: "Urology", category: "Medical Sciences", desc: "The study of the urinary tract and male reproductive system.", parent: null, obscurity: 0 },
+  { id: "vaccinology", label: "Vaccinology", category: "Medical Sciences", desc: "The study and development of vaccines.", parent: "immunology", obscurity: 2 },
+  { id: "desmology", label: "Desmology", category: "Medical Sciences", desc: "The study of ligaments and bandaging.", parent: null, obscurity: 4 },
+  { id: "sarcology", label: "Sarcology", category: "Medical Sciences", desc: "The study of the body's soft tissues.", parent: null, obscurity: 5 },
+  { id: "gerontology", label: "Gerontology", category: "Medical Sciences", desc: "The study of aging and the challenges of growing old.", parent: null, obscurity: 1 },
+  { id: "somatology", label: "Somatology", category: "Medical Sciences", desc: "The study of the human body's physical characteristics.", parent: null, obscurity: 3 },
+  { id: "sexology", label: "Sexology", category: "Medical Sciences", desc: "The scientific study of human sexuality.", parent: null, obscurity: 2 },
+  { id: "somnology", label: "Somnology", category: "Medical Sciences", desc: "The study of sleep and sleep disorders.", parent: null, obscurity: 3 },
+  { id: "aetiology", label: "Aetiology", category: "Medical Sciences", desc: "The study of the causes and origins of disease.", parent: "pathology", obscurity: 2 },
+  { id: "algology_pain", label: "Algology", category: "Medical Sciences", desc: "The study and treatment of pain.", parent: "neurology", obscurity: 3 },
+  { id: "paidology", label: "Paidology", category: "Medical Sciences", desc: "The study of children and child development.", parent: null, obscurity: 3 },
+  { id: "stasiology", label: "Stasiology", category: "Medical Sciences", desc: "The study of political parties and factional conflict.", parent: null, obscurity: 5 },
+  { id: "trichopathology", label: "Trichopathology", category: "Medical Sciences", desc: "The study of diseases and disorders of hair.", parent: "dermatology", obscurity: 4 },
+  { id: "senology", label: "Senology", category: "Medical Sciences", desc: "The study of breast diseases, particularly breast cancer.", parent: "oncology", obscurity: 3 },
+
+  // ── EARTH SCIENCES ─────────────────────────────────────────
+  { id: "geology", label: "Geology", category: "Earth Sciences", desc: "The study of the Earth's solid matter, rocks, and the processes that shape them.", parent: null, obscurity: 0 },
+  { id: "astrogeology", label: "Astrogeology", category: "Earth Sciences", desc: "The study of the geology of celestial bodies — planets, moons, asteroids.", parent: "geology", obscurity: 2 },
+  { id: "climatology", label: "Climatology", category: "Earth Sciences", desc: "The study of long-term climate patterns and atmospheric conditions.", parent: "meteorology", obscurity: 1 },
+  { id: "paleoclimatology", label: "Paleoclimatology", category: "Earth Sciences", desc: "The study of climates that existed before instrumental records.", parent: "climatology", obscurity: 2 },
+  { id: "edaphology", label: "Edaphology", category: "Earth Sciences", desc: "The study of how soil influences living things, especially plants.", parent: "geology", obscurity: 3 },
+  { id: "geochronology", label: "Geochronology", category: "Earth Sciences", desc: "The dating and study of the age of rocks and geological events.", parent: "geology", obscurity: 2 },
+  { id: "geomorphology", label: "Geomorphology", category: "Earth Sciences", desc: "The study of landforms and the processes that shape them.", parent: "geology", obscurity: 1 },
+  { id: "glaciology", label: "Glaciology", category: "Earth Sciences", desc: "The study of glaciers, ice sheets, and ice ages.", parent: "geology", obscurity: 2 },
+  { id: "hydrology", label: "Hydrology", category: "Earth Sciences", desc: "The study of the distribution and movement of water on Earth.", parent: null, obscurity: 1 },
+  { id: "hydrogeology", label: "Hydrogeology", category: "Earth Sciences", desc: "The study of groundwater and subsurface water systems.", parent: "hydrology", obscurity: 2 },
+  { id: "lithology", label: "Lithology", category: "Earth Sciences", desc: "The study of the physical characteristics of rocks.", parent: "geology", obscurity: 2 },
+  { id: "meteorology", label: "Meteorology", category: "Earth Sciences", desc: "The study of weather and atmospheric phenomena.", parent: null, obscurity: 0 },
+  { id: "mineralogy", label: "Mineralogy", category: "Earth Sciences", desc: "The study of minerals — their chemistry, crystal structure, and properties.", parent: "geology", obscurity: 1 },
+  { id: "oceanology", label: "Oceanology", category: "Earth Sciences", desc: "The study of the oceans and marine systems.", parent: null, obscurity: 1 },
+  { id: "orology", label: "Orology", category: "Earth Sciences", desc: "The study of mountains and mountain formation.", parent: "geology", obscurity: 3 },
+  { id: "pedology", label: "Pedology", category: "Earth Sciences", desc: "The study of soils in their natural environment.", parent: "geology", obscurity: 2 },
+  { id: "petrology", label: "Petrology", category: "Earth Sciences", desc: "The study of rocks — their origin, composition, and structure.", parent: "geology", obscurity: 2 },
+  { id: "potamology", label: "Potamology", category: "Earth Sciences", desc: "The study of rivers and river systems.", parent: "hydrology", obscurity: 3 },
+  { id: "sedimentology", label: "Sedimentology", category: "Earth Sciences", desc: "The study of sedimentary deposits and the processes that form them.", parent: "geology", obscurity: 2 },
+  { id: "seismology", label: "Seismology", category: "Earth Sciences", desc: "The study of earthquakes and the propagation of seismic waves.", parent: "geology", obscurity: 1 },
+  { id: "speleology", label: "Speleology", category: "Earth Sciences", desc: "The scientific exploration and study of caves.", parent: "geology", obscurity: 2 },
+  { id: "thalassology", label: "Thalassology", category: "Earth Sciences", desc: "The science of the sea, particularly coastal seas.", parent: "oceanology", obscurity: 4 },
+  { id: "volcanology", label: "Volcanology", category: "Earth Sciences", desc: "The study of volcanoes, volcanic eruptions, and magma.", parent: "geology", obscurity: 1 },
+  { id: "ichnology", label: "Ichnology", category: "Earth Sciences", desc: "The study of trace fossils — footprints, burrows, and tracks.", parent: "paleontology", obscurity: 3 },
+  { id: "coniology", label: "Coniology", category: "Earth Sciences", desc: "The study of atmospheric dust and particulate matter.", parent: "meteorology", obscurity: 4 },
+  { id: "nephology", label: "Nephology", category: "Earth Sciences", desc: "The study of clouds — their formation, classification, and behavior.", parent: "meteorology", obscurity: 3 },
+  { id: "cryology", label: "Cryology", category: "Earth Sciences", desc: "The study of very low temperatures and frozen environments.", parent: null, obscurity: 3 },
+  { id: "agrology", label: "Agrology", category: "Earth Sciences", desc: "The application of soil science to agricultural crop production.", parent: "edaphology", obscurity: 3 },
+  { id: "aerology", label: "Aerology", category: "Earth Sciences", desc: "The study of the atmosphere, particularly its upper layers.", parent: "meteorology", obscurity: 3 },
+  { id: "ombrology", label: "Ombrology", category: "Earth Sciences", desc: "The study of rain and rainfall patterns.", parent: "meteorology", obscurity: 4 },
+  { id: "eremology", label: "Eremology", category: "Earth Sciences", desc: "The study of deserts and arid environments.", parent: "geology", obscurity: 4 },
+  { id: "pyrology", label: "Pyrology", category: "Earth Sciences", desc: "The study of fire and its effects.", parent: null, obscurity: 4 },
+
+  // ── SPACE SCIENCES ─────────────────────────────────────────
+  { id: "cosmology", label: "Cosmology", category: "Space Sciences", desc: "The study of the origin, evolution, and large-scale structure of the universe.", parent: null, obscurity: 0 },
+  { id: "planetology", label: "Planetology", category: "Space Sciences", desc: "The study of planets and planetary systems.", parent: "cosmology", obscurity: 1 },
+  { id: "selenology", label: "Selenology", category: "Space Sciences", desc: "The study of the Moon — its geology, surface, and origin.", parent: "planetology", obscurity: 3 },
+  { id: "areology", label: "Areology", category: "Space Sciences", desc: "The study of Mars.", parent: "planetology", obscurity: 4 },
+  { id: "heliology", label: "Heliology", category: "Space Sciences", desc: "The study of the Sun.", parent: "cosmology", obscurity: 3 },
+  { id: "helioseismology", label: "Helioseismology", category: "Space Sciences", desc: "The study of the Sun's internal structure through its oscillations.", parent: "heliology", obscurity: 4 },
+  { id: "uranology", label: "Uranology", category: "Space Sciences", desc: "An archaic term for astronomy — the study of the heavens.", parent: "cosmology", obscurity: 4 },
+  { id: "meteorology_space", label: "Astrometerology", category: "Space Sciences", desc: "The study of the atmospheres and weather of other planets.", parent: "planetology", obscurity: 4 },
+  { id: "cometology", label: "Cometology", category: "Space Sciences", desc: "The study of comets — their composition, orbits, and origins.", parent: "cosmology", obscurity: 4 },
+
+  // ── SOCIAL SCIENCES ────────────────────────────────────────
+  { id: "anthropology", label: "Anthropology", category: "Social Sciences", desc: "The study of human cultures, societies, and biological development.", parent: null, obscurity: 0 },
+  { id: "archaeology", label: "Archaeology", category: "Social Sciences", desc: "The study of past human cultures through their material remains.", parent: "anthropology", obscurity: 0 },
+  { id: "geoarchaeology", label: "Geoarchaeology", category: "Social Sciences", desc: "The application of earth science methods to archaeological questions.", parent: "archaeology", obscurity: 3 },
+  { id: "criminology", label: "Criminology", category: "Social Sciences", desc: "The scientific study of crime, criminals, and the criminal justice system.", parent: "sociology", obscurity: 0 },
+  { id: "demography", label: "Demography", category: "Social Sciences", desc: "The statistical study of human populations and their dynamics.", parent: "sociology", obscurity: 1 },
+  { id: "ethnology", label: "Ethnology", category: "Social Sciences", desc: "The comparative and analytical study of cultures.", parent: "anthropology", obscurity: 2 },
+  { id: "psychology", label: "Psychology", category: "Social Sciences", desc: "The study of mind, behavior, and mental processes.", parent: null, obscurity: 0 },
+  { id: "parapsychology", label: "Parapsychology", category: "Social Sciences", desc: "The study of claimed paranormal phenomena — telepathy, precognition, and the like.", parent: "psychology", obscurity: 2 },
+  { id: "psychobiology", label: "Psychobiology", category: "Social Sciences", desc: "The study of biology as it relates to behavior and mental processes.", parent: "psychology", obscurity: 2 },
+  { id: "sociology", label: "Sociology", category: "Social Sciences", desc: "The study of human society, social institutions, and social relationships.", parent: null, obscurity: 0 },
+  { id: "agriology", label: "Agriology", category: "Social Sciences", desc: "The study of the customs and practices of non-literate peoples.", parent: "anthropology", obscurity: 4 },
+  { id: "kremlinology", label: "Kremlinology", category: "Social Sciences", desc: "The study of the politics and practices of secretive governments.", parent: "sociology", obscurity: 3 },
+  { id: "penology", label: "Penology", category: "Social Sciences", desc: "The study of punishment, prison management, and criminal rehabilitation.", parent: "criminology", obscurity: 2 },
+  { id: "psephology", label: "Psephology", category: "Social Sciences", desc: "The statistical study of elections and voting patterns.", parent: "sociology", obscurity: 2 },
+  { id: "victimology", label: "Victimology", category: "Social Sciences", desc: "The study of victims of crime and the psychological effects of victimization.", parent: "criminology", obscurity: 2 },
+  { id: "suicidology", label: "Suicidology", category: "Social Sciences", desc: "The study of suicidal behavior and its prevention.", parent: "psychology", obscurity: 3 },
+  { id: "praxeology", label: "Praxeology", category: "Social Sciences", desc: "The study of human action and purposeful behavior.", parent: "sociology", obscurity: 3 },
+  { id: "molinology", label: "Molinology", category: "Social Sciences", desc: "The study of mills and milling technology.", parent: null, obscurity: 4 },
+  { id: "polemology", label: "Polemology", category: "Social Sciences", desc: "The study of war and armed conflict.", parent: "sociology", obscurity: 3 },
+  { id: "ethnomusicology", label: "Ethnomusicology", category: "Social Sciences", desc: "The study of music in its cultural and social context.", parent: "anthropology", obscurity: 2 },
+
+  // ── HUMANITIES ─────────────────────────────────────────────
+  { id: "epistemology", label: "Epistemology", category: "Humanities", desc: "The study of knowledge — its nature, scope, and limits.", parent: null, obscurity: 1 },
+  { id: "ontology", label: "Ontology", category: "Humanities", desc: "The study of being, existence, and the nature of reality.", parent: null, obscurity: 1 },
+  { id: "phenomenology", label: "Phenomenology", category: "Humanities", desc: "The study of the structures of conscious experience.", parent: "ontology", obscurity: 2 },
+  { id: "axiology", label: "Axiology", category: "Humanities", desc: "The study of values and value judgments.", parent: null, obscurity: 3 },
+  { id: "deontology", label: "Deontology", category: "Humanities", desc: "The ethics of duty — judging actions by adherence to moral rules.", parent: "axiology", obscurity: 2 },
+  { id: "theology", label: "Theology", category: "Humanities", desc: "The study of the divine, religious belief, and the nature of God.", parent: null, obscurity: 0 },
+  { id: "angelology", label: "Angelology", category: "Humanities", desc: "The theological study of angels.", parent: "theology", obscurity: 3 },
+  { id: "demonology", label: "Demonology", category: "Humanities", desc: "The study of demons, evil spirits, and their hierarchies.", parent: "theology", obscurity: 2 },
+  { id: "ecclesiology", label: "Ecclesiology", category: "Humanities", desc: "The study of the Christian Church — its nature, structure, and architecture.", parent: "theology", obscurity: 3 },
+  { id: "eschatology", label: "Eschatology", category: "Humanities", desc: "The study of end times, final judgment, and the ultimate destiny of humanity.", parent: "theology", obscurity: 2 },
+  { id: "soteriology", label: "Soteriology", category: "Humanities", desc: "The theological study of salvation.", parent: "theology", obscurity: 3 },
+  { id: "mythology", label: "Mythology", category: "Humanities", desc: "The study of myths, legends, and traditional stories.", parent: null, obscurity: 0 },
+  { id: "philology", label: "Philology", category: "Humanities", desc: "The study of language in historical texts and literary sources.", parent: null, obscurity: 1 },
+  { id: "etymology", label: "Etymology", category: "Humanities", desc: "The study of the origins and historical development of words.", parent: "philology", obscurity: 1 },
+  { id: "phonology", label: "Phonology", category: "Humanities", desc: "The study of sound systems and patterns in language.", parent: "philology", obscurity: 1 },
+  { id: "morphophonology", label: "Morphophonology", category: "Humanities", desc: "The study of the interaction between morphological and phonological processes.", parent: "phonology", obscurity: 3 },
+  { id: "grammatology", label: "Grammatology", category: "Humanities", desc: "The study of writing systems and the science of scripts.", parent: "philology", obscurity: 3 },
+  { id: "graphology", label: "Graphology", category: "Humanities", desc: "The study (and claimed analysis) of handwriting.", parent: "philology", obscurity: 2 },
+  { id: "lexicology", label: "Lexicology", category: "Humanities", desc: "The study of the form, meaning, and behavior of words.", parent: "philology", obscurity: 2 },
+  { id: "semiology", label: "Semiology", category: "Humanities", desc: "The study of signs, symbols, and systems of signification.", parent: null, obscurity: 2 },
+  { id: "iconology", label: "Iconology", category: "Humanities", desc: "The study of visual imagery, symbolism, and allegory in art.", parent: "semiology", obscurity: 3 },
+  { id: "ideology", label: "Ideology", category: "Humanities", desc: "The study and analysis of systems of ideas and ideals.", parent: null, obscurity: 1 },
+  { id: "sinology", label: "Sinology", category: "Humanities", desc: "The academic study of China — its language, history, and culture.", parent: null, obscurity: 2 },
+  { id: "egyptology", label: "Egyptology", category: "Humanities", desc: "The study of the language, history, and culture of ancient Egypt.", parent: "archaeology", obscurity: 1 },
+  { id: "assyriology", label: "Assyriology", category: "Humanities", desc: "The study of ancient Mesopotamia — Assyria, Babylonia, and Sumer.", parent: "archaeology", obscurity: 2 },
+  { id: "musicology", label: "Musicology", category: "Humanities", desc: "The scholarly and scientific study of music in all its forms.", parent: null, obscurity: 1 },
+  { id: "narratology", label: "Narratology", category: "Humanities", desc: "The study of narrative structure and how stories work.", parent: null, obscurity: 3 },
+  { id: "martyrology", label: "Martyrology", category: "Humanities", desc: "The study and cataloguing of martyrs and their stories.", parent: "theology", obscurity: 3 },
+  { id: "hagiology", label: "Hagiology", category: "Humanities", desc: "The study of saints and sacred writings.", parent: "theology", obscurity: 4 },
+  { id: "teleology", label: "Teleology", category: "Humanities", desc: "The study of purpose, design, and final causes in nature.", parent: null, obscurity: 2 },
+  { id: "codicology", label: "Codicology", category: "Humanities", desc: "The study of manuscript books as physical objects.", parent: "philology", obscurity: 3 },
+  { id: "agathology", label: "Agathology", category: "Humanities", desc: "The philosophical study of goodness.", parent: "axiology", obscurity: 5 },
+  { id: "aretology", label: "Aretology", category: "Humanities", desc: "The study of virtue and its role in moral life.", parent: "axiology", obscurity: 4 },
+  { id: "mereology", label: "Mereology", category: "Humanities", desc: "The study of parts and the wholes they form.", parent: "ontology", obscurity: 3 },
+  { id: "nomology", label: "Nomology", category: "Humanities", desc: "The study of the laws of the mind, or law in general.", parent: null, obscurity: 4 },
+  { id: "heortology", label: "Heortology", category: "Humanities", desc: "The study of religious feasts and festival calendars.", parent: "theology", obscurity: 4 },
+  { id: "tonology", label: "Tonology", category: "Humanities", desc: "The study of tone systems in tonal languages.", parent: "phonology", obscurity: 4 },
+  { id: "tropology", label: "Tropology", category: "Humanities", desc: "The study of figurative language — metaphors, allegories, tropes.", parent: "philology", obscurity: 4 },
+  { id: "dysteleology", label: "Dysteleology", category: "Humanities", desc: "The philosophical doctrine of purposelessness in nature.", parent: "teleology", obscurity: 5 },
+  { id: "mariology", label: "Mariology", category: "Humanities", desc: "The theological study of the Virgin Mary.", parent: "theology", obscurity: 3 },
+  { id: "christology", label: "Christology", category: "Humanities", desc: "The theological study of the nature and work of Jesus Christ.", parent: "theology", obscurity: 2 },
+  { id: "pneumatology", label: "Pneumatology", category: "Humanities", desc: "The theological study of the Holy Spirit, or the study of spirits in general.", parent: "theology", obscurity: 3 },
+  { id: "coptology", label: "Coptology", category: "Humanities", desc: "The study of Coptic civilization, language, and art.", parent: null, obscurity: 4 },
+  { id: "indology", label: "Indology", category: "Humanities", desc: "The academic study of Indian history, languages, and cultures.", parent: null, obscurity: 2 },
+  { id: "japanology", label: "Japanology", category: "Humanities", desc: "The academic study of Japan — its culture, history, and language.", parent: null, obscurity: 2 },
+  { id: "neology", label: "Neology", category: "Humanities", desc: "The study of new words and how they enter a language.", parent: "philology", obscurity: 3 },
+  { id: "glottology", label: "Glottology", category: "Humanities", desc: "An older term for the study of language and linguistics.", parent: "philology", obscurity: 4 },
+  { id: "stichology", label: "Stichology", category: "Humanities", desc: "The study of lines of verse and their arrangement.", parent: null, obscurity: 5 },
+
+  // ── PHYSICAL SCIENCES ──────────────────────────────────────
+  { id: "technology", label: "Technology", category: "Physical Sciences", desc: "The application of scientific knowledge to practical purposes.", parent: null, obscurity: 0 },
+  { id: "nanotechnology", label: "Nanotechnology", category: "Physical Sciences", desc: "The manipulation and engineering of matter at the molecular and atomic scale.", parent: "technology", obscurity: 0 },
+  { id: "actinology", label: "Actinology", category: "Physical Sciences", desc: "The study of the effect of light on chemicals.", parent: null, obscurity: 4 },
+  { id: "topology", label: "Topology", category: "Physical Sciences", desc: "The mathematical study of shapes and spaces that are preserved under continuous deformation.", parent: null, obscurity: 1 },
+  { id: "gemology", label: "Gemology", category: "Physical Sciences", desc: "The study of gemstones — their identification, grading, and valuation.", parent: "mineralogy", obscurity: 2 },
+  { id: "horology", label: "Horology", category: "Physical Sciences", desc: "The art and science of measuring time and making timepieces.", parent: null, obscurity: 2 },
+  { id: "metrology", label: "Metrology", category: "Physical Sciences", desc: "The science of measurement — its theory and practice.", parent: null, obscurity: 2 },
+  { id: "methodology", label: "Methodology", category: "Physical Sciences", desc: "The study and systematic analysis of methods applied to a field of study.", parent: null, obscurity: 0 },
+  { id: "rheology", label: "Rheology", category: "Physical Sciences", desc: "The study of the flow and deformation of matter.", parent: null, obscurity: 3 },
+  { id: "tribology", label: "Tribology", category: "Physical Sciences", desc: "The study of friction, wear, and lubrication of interacting surfaces.", parent: null, obscurity: 3 },
+  { id: "nanotribology", label: "Nanotribology", category: "Physical Sciences", desc: "The study of friction, wear, and contact mechanics at the nanoscale.", parent: "tribology", obscurity: 4 },
+  { id: "thermology", label: "Thermology", category: "Physical Sciences", desc: "The study of heat and thermal phenomena.", parent: null, obscurity: 3 },
+  { id: "kymatology", label: "Kymatology", category: "Physical Sciences", desc: "The study of waves and wave motion.", parent: null, obscurity: 4 },
+  { id: "anemology", label: "Anemology", category: "Physical Sciences", desc: "The study of wind.", parent: "meteorology", obscurity: 4 },
+  { id: "photology", label: "Photology", category: "Physical Sciences", desc: "The study of light and optics.", parent: null, obscurity: 4 },
+  { id: "acousticology", label: "Acousticology", category: "Physical Sciences", desc: "The study of sound and acoustics.", parent: null, obscurity: 3 },
+  { id: "cryogenology", label: "Cryogenology", category: "Physical Sciences", desc: "The study of the production and effects of very low temperatures.", parent: "cryology", obscurity: 4 },
+
+  // ── INFORMATION SCIENCES ───────────────────────────────────
+  { id: "cryptology", label: "Cryptology", category: "Information Sciences", desc: "The study of codes, ciphers, and secret communication.", parent: null, obscurity: 1 },
+  { id: "numerology", label: "Numerology", category: "Information Sciences", desc: "The study of the supposed mystical significance of numbers.", parent: null, obscurity: 1 },
+  { id: "typology", label: "Typology", category: "Information Sciences", desc: "The study and interpretation of types and systems of classification.", parent: null, obscurity: 2 },
+  { id: "symbology", label: "Symbology", category: "Information Sciences", desc: "The study and interpretation of symbols.", parent: null, obscurity: 2 },
+  { id: "bibliology", label: "Bibliology", category: "Information Sciences", desc: "The study of books — their history, production, and classification.", parent: null, obscurity: 3 },
+  { id: "archivology", label: "Archivology", category: "Information Sciences", desc: "The study of archives, their management and preservation.", parent: null, obscurity: 3 },
+  { id: "documentology", label: "Documentology", category: "Information Sciences", desc: "The study of documents and documentation systems.", parent: null, obscurity: 4 },
+
+  // ── CURIOSITIES ────────────────────────────────────────────
+  { id: "vexillology", label: "Vexillology", category: "Curiosities", desc: "The study of the history, symbolism, and usage of flags.", parent: null, obscurity: 2 },
+  { id: "campanology", label: "Campanology", category: "Curiosities", desc: "The art and science of bell ringing.", parent: null, obscurity: 3 },
+  { id: "pogonology", label: "Pogonology", category: "Curiosities", desc: "The study of beards.", parent: null, obscurity: 5 },
+  { id: "arctophily", label: "Arctophily", category: "Curiosities", desc: "The study and collection of teddy bears.", parent: null, obscurity: 5 },
+  { id: "deltiology", label: "Deltiology", category: "Curiosities", desc: "The study and collection of postcards.", parent: null, obscurity: 4 },
+  { id: "oenology", label: "Oenology", category: "Curiosities", desc: "The science of wine and winemaking.", parent: null, obscurity: 2 },
+  { id: "bromatology", label: "Bromatology", category: "Curiosities", desc: "The study of food — its composition, preparation, and nutrition.", parent: null, obscurity: 3 },
+  { id: "dendrochronology", label: "Dendrochronology", category: "Curiosities", desc: "The dating of past events and climate through the study of tree rings.", parent: "dendrology", obscurity: 2 },
+  { id: "trichology", label: "Trichology", category: "Curiosities", desc: "The study of hair and scalp health.", parent: "dermatology", obscurity: 3 },
+  { id: "craniology", label: "Craniology", category: "Curiosities", desc: "The study of the shape and size of skulls.", parent: "osteology", obscurity: 3 },
+  { id: "scatology", label: "Scatology", category: "Curiosities", desc: "The study of feces and excrement, or obscene language.", parent: null, obscurity: 3 },
+  { id: "emetology", label: "Emetology", category: "Curiosities", desc: "The study of vomiting and emesis.", parent: null, obscurity: 5 },
+  { id: "agnoiology", label: "Agnoiology", category: "Curiosities", desc: "The study of ignorance and the things we cannot know.", parent: null, obscurity: 5 },
+  { id: "dactylology", label: "Dactylology", category: "Curiosities", desc: "The study of communicating with the fingers, especially sign language.", parent: null, obscurity: 5 },
+  { id: "ponerology", label: "Ponerology", category: "Curiosities", desc: "The study of evil and its origins.", parent: null, obscurity: 4 },
+  { id: "enigmatology", label: "Enigmatology", category: "Curiosities", desc: "The study of puzzles and puzzle-making.", parent: null, obscurity: 3 },
+  { id: "zymology", label: "Zymology", category: "Curiosities", desc: "The study of fermentation and its biochemical processes.", parent: null, obscurity: 3 },
+  { id: "futurology", label: "Futurology", category: "Curiosities", desc: "The study of future possibilities, scenarios, and trends.", parent: null, obscurity: 2 },
+  { id: "reflexology", label: "Reflexology", category: "Curiosities", desc: "The study of reflex responses, or the alternative therapy based on pressure points.", parent: null, obscurity: 2 },
+  { id: "garbology", label: "Garbology", category: "Curiosities", desc: "The study of modern refuse and waste as a means of understanding society.", parent: null, obscurity: 4 },
+  { id: "latrinology", label: "Latrinology", category: "Curiosities", desc: "The study of inscriptions and graffiti found on restroom walls.", parent: null, obscurity: 5 },
+  { id: "alethiology", label: "Alethiology", category: "Curiosities", desc: "The study of the nature of truth.", parent: null, obscurity: 5 },
+  { id: "promenadology", label: "Promenadology", category: "Curiosities", desc: "The science of taking a walk — the art and study of strolling.", parent: null, obscurity: 5 },
+  { id: "mixology", label: "Mixology", category: "Curiosities", desc: "The art and craft of creating cocktails.", parent: null, obscurity: 1 },
+  { id: "auxology", label: "Auxology", category: "Curiosities", desc: "The study of human physical growth and development.", parent: null, obscurity: 4 },
+  { id: "kalology", label: "Kalology", category: "Curiosities", desc: "The study of beauty and aesthetics.", parent: null, obscurity: 5 },
+  { id: "logology", label: "Logology", category: "Curiosities", desc: "The study of science itself — the science of science.", parent: null, obscurity: 4 },
+  { id: "gelotology", label: "Gelotology", category: "Curiosities", desc: "The study of laughter and its effects on the body.", parent: null, obscurity: 4 },
+  { id: "oneirology", label: "Oneirology", category: "Curiosities", desc: "The scientific study of dreams.", parent: null, obscurity: 3 },
+  { id: "philematology", label: "Philematology", category: "Curiosities", desc: "The study of kissing.", parent: null, obscurity: 5 },
+  { id: "phrenology", label: "Phrenology", category: "Curiosities", desc: "The discredited study of skull shape as an indicator of character and mental ability.", parent: null, obscurity: 2 },
+  { id: "iridology", label: "Iridology", category: "Curiosities", desc: "The alternative practice of diagnosing illness by examining the iris.", parent: null, obscurity: 3 },
+  { id: "aristology", label: "Aristology", category: "Curiosities", desc: "The art and science of fine dining.", parent: null, obscurity: 5 },
+  { id: "cereology", label: "Cereology", category: "Curiosities", desc: "The study of crop circles.", parent: null, obscurity: 4 },
+  { id: "timbrology", label: "Timbrology", category: "Curiosities", desc: "The study of postage stamps — another name for philately.", parent: null, obscurity: 4 },
+  { id: "tegestology", label: "Tegestology", category: "Curiosities", desc: "The collecting of beer mats and coasters.", parent: null, obscurity: 5 },
+  { id: "nostology", label: "Nostology", category: "Curiosities", desc: "The study of senility and the return to childlike states in old age.", parent: null, obscurity: 5 },
+  { id: "oikology", label: "Oikology", category: "Curiosities", desc: "The science of housekeeping.", parent: null, obscurity: 5 },
+  { id: "sitiology", label: "Sitiology", category: "Curiosities", desc: "The study of food, diet, and nutrition.", parent: null, obscurity: 4 },
+  { id: "aerolithology", label: "Aerolithology", category: "Curiosities", desc: "The study of meteorites.", parent: null, obscurity: 5 },
+  { id: "olfactology", label: "Olfactology", category: "Curiosities", desc: "The study of the sense of smell.", parent: null, obscurity: 4 },
+  { id: "kidology", label: "Kidology", category: "Curiosities", desc: "The art of deception and bluffing.", parent: null, obscurity: 5 },
+  { id: "chaology", label: "Chaology", category: "Curiosities", desc: "The study of chaos and chaos theory.", parent: null, obscurity: 3 },
+  { id: "siderology", label: "Siderology", category: "Curiosities", desc: "The study of iron and the properties of meteoritic iron.", parent: null, obscurity: 5 },
+  { id: "hippocratology", label: "Hippocratology", category: "Curiosities", desc: "The study of the life and writings of Hippocrates.", parent: null, obscurity: 5 },
+  { id: "cosmetology", label: "Cosmetology", category: "Curiosities", desc: "The study and practice of beauty treatments.", parent: null, obscurity: 1 },
+  { id: "escapology", label: "Escapology", category: "Curiosities", desc: "The art and practice of escaping from physical restraints.", parent: null, obscurity: 2 },
+  { id: "taphology", label: "Taphology", category: "Curiosities", desc: "The study of funerary customs and burial practices.", parent: null, obscurity: 4 },
+  { id: "spermology", label: "Spermology", category: "Curiosities", desc: "The study of seeds — or, colloquially, the gathering of trivial facts.", parent: null, obscurity: 5 },
+  { id: "pestology", label: "Pestology", category: "Curiosities", desc: "The study of pests and pest control.", parent: null, obscurity: 4 },
+  { id: "dosiology", label: "Dosiology", category: "Curiosities", desc: "The study of appropriate doses and dosing regimens.", parent: null, obscurity: 5 },
+  { id: "organology_music", label: "Organology", category: "Curiosities", desc: "The study of musical instruments — their classification and history.", parent: null, obscurity: 3 },
+  { id: "storiology", label: "Storiology", category: "Curiosities", desc: "The study of folklore and traditional stories.", parent: null, obscurity: 5 },
+  { id: "osmology", label: "Osmology", category: "Curiosities", desc: "The study of odors and the sense of smell.", parent: null, obscurity: 4 },
+  { id: "menology", label: "Menology", category: "Curiosities", desc: "The study of church calendars and religious commemorations.", parent: null, obscurity: 5 },
+  { id: "dystychiology", label: "Dystychiology", category: "Curiosities", desc: "The study of accidents and disasters.", parent: null, obscurity: 5 },
+  { id: "astrometeorology", label: "Astrometeorology", category: "Curiosities", desc: "The study of the supposed effects of celestial bodies on weather.", parent: null, obscurity: 5 },
+  { id: "pyroballogy", label: "Pyroballogy", category: "Curiosities", desc: "The study of artillery and ballistics.", parent: null, obscurity: 5 },
+  { id: "hippocrepiology", label: "Hippocrepiology", category: "Curiosities", desc: "The habit of speaking authoritatively on topics one knows nothing about.", parent: null, obscurity: 5 },
+  { id: "necrolog", label: "Necrology", category: "Curiosities", desc: "The study or recording of death notices and obituaries.", parent: null, obscurity: 4 },
+  { id: "lalopathology", label: "Lalopathology", category: "Curiosities", desc: "The study of speech disorders.", parent: null, obscurity: 5 },
+  { id: "arctology", label: "Arctology", category: "Curiosities", desc: "The study of bears.", parent: null, obscurity: 5 },
+  { id: "potteriology", label: "Potteriology", category: "Curiosities", desc: "The study of the Harry Potter universe — a modern fan-coined discipline.", parent: null, obscurity: 5 },
+  { id: "noctology", label: "Noctology", category: "Curiosities", desc: "The study of the night and nocturnal phenomena.", parent: null, obscurity: 5 },
+  { id: "aphnology", label: "Aphnology", category: "Curiosities", desc: "The study of wealth.", parent: null, obscurity: 5 },
+  { id: "aristology_food", label: "Artiophrenology", category: "Curiosities", desc: "The study of even numbers and their mystical properties.", parent: null, obscurity: 5 },
+  { id: "atmology", label: "Atmology", category: "Curiosities", desc: "The study of aqueous vapor and evaporation.", parent: null, obscurity: 5 },
+  { id: "caliology", label: "Caliology", category: "Curiosities", desc: "The study of bird nests and nest construction.", parent: null, obscurity: 5 },
+  { id: "carpology_cur", label: "Chrematology", category: "Curiosities", desc: "The study of money and wealth.", parent: null, obscurity: 4 },
+  { id: "glottogony", label: "Glottogony", category: "Curiosities", desc: "The study of the origin of language.", parent: null, obscurity: 5 },
+  { id: "gynaecology_hist", label: "Genealogy", category: "Curiosities", desc: "The study of family histories and lines of descent.", parent: null, obscurity: 1 },
+  { id: "henology", label: "Henology", category: "Curiosities", desc: "The study of 'The One' — unity and the fundamental principle of reality.", parent: null, obscurity: 5 },
+  { id: "hyetology", label: "Hyetology", category: "Curiosities", desc: "The study of rainfall and precipitation.", parent: null, obscurity: 5 },
+  { id: "insectology", label: "Insectology", category: "Curiosities", desc: "An older, informal term for the study of insects.", parent: "entomology", obscurity: 4 },
+  { id: "pterygology", label: "Pterygology", category: "Curiosities", desc: "The study of fins and wing-like structures.", parent: null, obscurity: 5 },
+  { id: "runology", label: "Runology", category: "Curiosities", desc: "The study of runic alphabets and inscriptions.", parent: null, obscurity: 3 },
+  { id: "spectrology", label: "Spectrology", category: "Curiosities", desc: "The study of ghosts and apparitions.", parent: null, obscurity: 4 },
+  { id: "stratology", label: "Stratology", category: "Curiosities", desc: "The study of armies and military strategy.", parent: null, obscurity: 4 },
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  CONSTANTS & COLORS
+// ═══════════════════════════════════════════════════════════════
+
+const CATEGORY_COLORS = {
+  "Life Sciences":        { base: "#22c55e", glow: "#4ade80", dim: "#1a5c32" },
+  "Zoology":              { base: "#10b981", glow: "#34d399", dim: "#0d5c41" },
+  "Plant Sciences":       { base: "#84cc16", glow: "#a3e635", dim: "#3d5c0d" },
+  "Microbiology":         { base: "#06b6d4", glow: "#22d3ee", dim: "#0a4a55" },
+  "Medical Sciences":     { base: "#ef4444", glow: "#f87171", dim: "#6b2020" },
+  "Earth Sciences":       { base: "#f59e0b", glow: "#fbbf24", dim: "#6b4407" },
+  "Space Sciences":       { base: "#8b5cf6", glow: "#a78bfa", dim: "#3b2670" },
+  "Social Sciences":      { base: "#3b82f6", glow: "#60a5fa", dim: "#1c3a6b" },
+  "Humanities":           { base: "#ec4899", glow: "#f472b6", dim: "#6b2045" },
+  "Physical Sciences":    { base: "#f97316", glow: "#fb923c", dim: "#6b330d" },
+  "Information Sciences": { base: "#6366f1", glow: "#818cf8", dim: "#2d2e6b" },
+  "Curiosities":          { base: "#14b8a6", glow: "#2dd4bf", dim: "#0d5c52" },
+};
+
+const CATEGORIES = Object.keys(CATEGORY_COLORS);
+
+function getRadius(d) {
+  return Math.max(3.5, 13 - d.obscurity * 1.8);
+}
+
+function obscurityLabel(n) {
+  if (n <= 0) return "Universally known";
+  if (n <= 1) return "Well-known";
+  if (n <= 2) return "Fairly known";
+  if (n <= 3) return "Niche";
+  if (n <= 4) return "Obscure";
+  return "Ultra-obscure";
+}
+
+function obscurityStars(n) {
+  const filled = Math.min(n, 5);
+  return "●".repeat(filled) + "○".repeat(5 - filled);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════
+
+function Ologiology() {
+  const svgRef = useRef(null);
+  const containerRef = useRef(null);
+  const simulationRef = useRef(null);
+  const zoomRef = useRef(null);
+  const [selected, setSelected] = useState(null);
+  const [activeCategories, setActiveCategories] = useState(new Set(CATEGORIES));
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dimensions, setDimensions] = useState({ width: 900, height: 700 });
+  const [showIntro, setShowIntro] = useState(true);
+  const [showAbout, setShowAbout] = useState(false);
+  const [graphReady, setGraphReady] = useState(false);
+
+  // Debounced search
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 180);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const filteredNodes = useMemo(() =>
+    OLOGIES.filter(n =>
+      activeCategories.has(n.category) &&
+      (debouncedSearch === "" ||
+        n.label.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        n.desc.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        n.category.toLowerCase().includes(debouncedSearch.toLowerCase()))
+    ), [activeCategories, debouncedSearch]
+  );
+
+  const filteredIds = useMemo(() => new Set(filteredNodes.map(n => n.id)), [filteredNodes]);
+
+  const links = useMemo(() =>
+    OLOGIES.filter(n => n.parent && filteredIds.has(n.id) && filteredIds.has(n.parent))
+      .map(n => ({ source: n.parent, target: n.id })),
+    [filteredIds]
+  );
+
+  const searchMatchIds = useMemo(() => {
+    if (!debouncedSearch) return new Set();
+    const term = debouncedSearch.toLowerCase();
+    return new Set(
+      OLOGIES.filter(n =>
+        n.label.toLowerCase().includes(term) || n.desc.toLowerCase().includes(term)
+      ).map(n => n.id)
+    );
+  }, [debouncedSearch]);
+
+  // Resize observer
+  useEffect(() => {
+    const update = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setDimensions({ width: rect.width, height: Math.max(400, rect.height) });
+      }
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  // D3 simulation
+  useEffect(() => {
+    if (!svgRef.current || showIntro) return;
+    const { width, height } = dimensions;
+    const svg = d3.select(svgRef.current);
+    svg.selectAll("*").remove();
+
+    const defs = svg.append("defs");
+
+    // Glow filter
+    const filter = defs.append("filter").attr("id", "glow").attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
+    filter.append("feGaussianBlur").attr("stdDeviation", "2.5").attr("result", "coloredBlur");
+    const feMerge = filter.append("feMerge");
+    feMerge.append("feMergeNode").attr("in", "coloredBlur");
+    feMerge.append("feMergeNode").attr("in", "SourceGraphic");
+
+    // Soft glow for selected
+    const selFilter = defs.append("filter").attr("id", "selGlow").attr("x", "-100%").attr("y", "-100%").attr("width", "300%").attr("height", "300%");
+    selFilter.append("feGaussianBlur").attr("stdDeviation", "5").attr("result", "blur");
+    const selMerge = selFilter.append("feMerge");
+    selMerge.append("feMergeNode").attr("in", "blur");
+    selMerge.append("feMergeNode").attr("in", "SourceGraphic");
+
+    const g = svg.append("g");
+
+    const zoom = d3.zoom()
+      .scaleExtent([0.15, 6])
+      .on("zoom", e => g.attr("transform", e.transform));
+    svg.call(zoom);
+    zoomRef.current = zoom;
+
+    const nodes = filteredNodes.map(d => ({ ...d }));
+    const nodeMap = new Map(nodes.map(n => [n.id, n]));
+    const edgeData = links.filter(l => nodeMap.has(l.source) && nodeMap.has(l.target))
+      .map(l => ({ source: l.source, target: l.target }));
+
+    const simulation = d3.forceSimulation(nodes)
+      .force("link", d3.forceLink(edgeData).id(d => d.id).distance(50).strength(0.3))
+      .force("charge", d3.forceManyBody().strength(d => d.obscurity <= 1 ? -140 : -100))
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("collision", d3.forceCollide().radius(d => getRadius(d) + 4))
+      .force("x", d3.forceX(width / 2).strength(0.025))
+      .force("y", d3.forceY(height / 2).strength(0.025));
+
+    simulationRef.current = simulation;
+
+    // Links
+    const link = g.append("g").attr("class", "links").selectAll("line").data(edgeData).join("line")
+      .attr("stroke", d => {
+        const src = typeof d.source === "object" ? d.source : nodeMap.get(d.source);
+        return src ? CATEGORY_COLORS[src.category]?.base + "20" : "#ffffff08";
+      })
+      .attr("stroke-width", 0.7);
+
+    // Node groups
+    const node = g.append("g").attr("class", "nodes").selectAll("g").data(nodes).join("g")
+      .attr("cursor", "pointer")
+      .call(d3.drag()
+        .on("start", (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+        .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
+        .on("end", (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+      );
+
+    // Outer halo
+    node.append("circle")
+      .attr("r", d => getRadius(d) + 3)
+      .attr("fill", "none")
+      .attr("stroke", d => CATEGORY_COLORS[d.category]?.glow || "#fff")
+      .attr("stroke-width", 0.3)
+      .attr("opacity", 0.2);
+
+    // Main circle
+    node.append("circle")
+      .attr("class", "main-circle")
+      .attr("r", d => getRadius(d))
+      .attr("fill", d => CATEGORY_COLORS[d.category]?.base + "20")
+      .attr("stroke", d => {
+        if (debouncedSearch && searchMatchIds.has(d.id)) return "#ffffffcc";
+        return CATEGORY_COLORS[d.category]?.base || "#fff";
+      })
+      .attr("stroke-width", d => debouncedSearch && searchMatchIds.has(d.id) ? 2.5 : 1.1)
+      .attr("filter", "url(#glow)");
+
+    // Labels
+    node.append("text")
+      .text(d => d.label)
+      .attr("text-anchor", "middle")
+      .attr("dy", d => getRadius(d) + 11)
+      .attr("fill", d => {
+        if (debouncedSearch && searchMatchIds.has(d.id)) return "#f0e6d3";
+        return d.obscurity <= 1 ? "#9a8e78" : "#6b6054";
+      })
+      .attr("font-size", d => d.obscurity <= 1 ? "8.5px" : "7px")
+      .attr("font-family", "'EB Garamond', Georgia, serif")
+      .attr("letter-spacing", "0.3px")
+      .attr("pointer-events", "none")
+      .attr("opacity", d => d.obscurity <= 3 ? 1 : 0.7);
+
+    // Interactions
+    node.on("click", (e, d) => { e.stopPropagation(); setSelected(d); });
+    svg.on("click", () => setSelected(null));
+
+    // Hover highlighting
+    const updateHover = (hovId) => {
+      if (hovId) {
+        const connected = new Set([hovId]);
+        edgeData.forEach(l => {
+          const sId = typeof l.source === "object" ? l.source.id : l.source;
+          const tId = typeof l.target === "object" ? l.target.id : l.target;
+          if (sId === hovId) connected.add(tId);
+          if (tId === hovId) connected.add(sId);
+        });
+        node.attr("opacity", d => connected.has(d.id) ? 1 : 0.12);
+        link.attr("opacity", l => {
+          const sId = typeof l.source === "object" ? l.source.id : l.source;
+          const tId = typeof l.target === "object" ? l.target.id : l.target;
+          return (sId === hovId || tId === hovId) ? 0.8 : 0.03;
+        }).attr("stroke-width", l => {
+          const sId = typeof l.source === "object" ? l.source.id : l.source;
+          const tId = typeof l.target === "object" ? l.target.id : l.target;
+          return (sId === hovId || tId === hovId) ? 1.5 : 0.7;
+        });
+      } else {
+        node.attr("opacity", d => debouncedSearch && searchMatchIds.size > 0 && !searchMatchIds.has(d.id) ? 0.15 : 1);
+        link.attr("opacity", 1).attr("stroke-width", 0.7);
+      }
+    };
+
+    node.on("mouseenter", (e, d) => updateHover(d.id));
+    node.on("mouseleave", () => updateHover(null));
+
+    simulation.on("tick", () => {
+      link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+      node.attr("transform", d => `translate(${d.x},${d.y})`);
+    });
+
+    // Initial zoom to fit
+    setTimeout(() => {
+      const scale = Math.min(0.8, Math.min(width, height) / 1100);
+      svg.transition().duration(1200).ease(d3.easeCubicOut).call(
+        zoom.transform,
+        d3.zoomIdentity.translate(width * (1 - scale) / 2, height * (1 - scale) / 2).scale(scale)
+      );
+      setGraphReady(true);
+    }, 400);
+
+    return () => simulation.stop();
+  }, [filteredNodes.length, dimensions, debouncedSearch, showIntro]);
+
+  // Zoom controls
+  const handleZoom = useCallback((factor) => {
+    if (!svgRef.current || !zoomRef.current) return;
+    const svg = d3.select(svgRef.current);
+    svg.transition().duration(300).call(zoomRef.current.scaleBy, factor);
+  }, []);
+
+  const handleResetZoom = useCallback(() => {
+    if (!svgRef.current || !zoomRef.current) return;
+    const svg = d3.select(svgRef.current);
+    const { width, height } = dimensions;
+    const scale = Math.min(0.8, Math.min(width, height) / 1100);
+    svg.transition().duration(600).ease(d3.easeCubicOut).call(
+      zoomRef.current.transform,
+      d3.zoomIdentity.translate(width * (1 - scale) / 2, height * (1 - scale) / 2).scale(scale)
+    );
+  }, [dimensions]);
+
+  // Category toggle
+  function toggleCategory(cat) {
+    setActiveCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(cat)) { if (next.size > 1) next.delete(cat); }
+      else next.add(cat);
+      return next;
+    });
+  }
+
+  function toggleAllCategories() {
+    setActiveCategories(prev => {
+      if (prev.size === CATEGORIES.length) return new Set([CATEGORIES[0]]);
+      return new Set(CATEGORIES);
+    });
+  }
+
+  // Random ology
+  function pickRandom() {
+    const pool = filteredNodes.length > 0 ? filteredNodes : OLOGIES;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    setSelected(pick);
+  }
+
+  // Derived state
+  const selectedNode = selected;
+  const parentNode = selectedNode?.parent ? OLOGIES.find(o => o.id === selectedNode.parent) : null;
+  const childNodes = selectedNode ? OLOGIES.filter(o => o.parent === selectedNode.id) : [];
+
+  const catCounts = useMemo(() => {
+    const counts = {};
+    filteredNodes.forEach(n => { counts[n.category] = (counts[n.category] || 0) + 1; });
+    return counts;
+  }, [filteredNodes]);
+
+  const stats = useMemo(() => {
+    const byObscurity = [0, 0, 0, 0, 0, 0];
+    OLOGIES.forEach(o => byObscurity[Math.min(o.obscurity, 5)]++);
+    const withParent = OLOGIES.filter(o => o.parent).length;
+    const roots = OLOGIES.filter(o => !o.parent).length;
+    return { total: OLOGIES.length, byObscurity, withParent, roots, categories: CATEGORIES.length };
+  }, []);
+
+  // ─── INTRO OVERLAY ─────────────────────────────────────
+  if (showIntro) {
+    return (
+      <div className="intro-overlay">
+        <div style={{
+          textAlign: "center", maxWidth: "560px", padding: "40px",
+          animation: "introFade 0.8s ease both",
+        }}>
+          <div className="ornament" style={{ marginBottom: "32px" }}>✦ · ✦ · ✦</div>
+          <h1 style={{
+            fontSize: "clamp(36px, 6vw, 56px)",
+            fontWeight: 400,
+            letterSpacing: "6px",
+            textTransform: "uppercase",
+            color: "#e8dcc8",
+            lineHeight: 1.1,
+            marginBottom: "16px",
+            fontFamily: "'Cormorant Garamond', 'EB Garamond', Georgia, serif",
+          }}>
+            Ologiology
+          </h1>
+          <p style={{
+            fontSize: "15px",
+            color: "#8a7e6b",
+            fontStyle: "italic",
+            letterSpacing: "1.5px",
+            lineHeight: 1.7,
+            marginBottom: "8px",
+          }}>
+            The study of studies.
+          </p>
+          <p style={{
+            fontSize: "13px",
+            color: "#5a5248",
+            lineHeight: 1.6,
+            marginBottom: "36px",
+            maxWidth: "420px",
+            marginLeft: "auto",
+            marginRight: "auto",
+          }}>
+            An interactive atlas of {OLOGIES.length} fields of human inquiry, from Acarology to Zymology — mapped as a living constellation of knowledge.
+          </p>
+          <button
+            onClick={() => setShowIntro(false)}
+            style={{
+              background: "transparent",
+              border: "1px solid rgba(232, 220, 200, 0.2)",
+              color: "#e8dcc8",
+              padding: "12px 40px",
+              borderRadius: "2px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontFamily: "'EB Garamond', Georgia, serif",
+              letterSpacing: "3px",
+              textTransform: "uppercase",
+              transition: "all 0.3s ease",
+            }}
+            onMouseEnter={e => { e.target.style.borderColor = "rgba(232,220,200,0.5)"; e.target.style.background = "rgba(232,220,200,0.05)"; }}
+            onMouseLeave={e => { e.target.style.borderColor = "rgba(232,220,200,0.2)"; e.target.style.background = "transparent"; }}
+          >
+            Enter
+          </button>
+          <div className="ornament" style={{ marginTop: "40px" }}>· · ·</div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── MAIN VIEW ─────────────────────────────────────────
+  return (
+    <div style={{
+      background: "linear-gradient(160deg, #08080c 0%, #0e0d14 35%, #0b0c10 65%, #0a0a0f 100%)",
+      width: "100vw", height: "100vh",
+      fontFamily: "'EB Garamond', Georgia, serif",
+      color: "#e8dcc8",
+      position: "relative",
+      overflow: "hidden",
+      animation: "fadeIn 0.6s ease",
+    }}>
+      {/* Ambient radial accents */}
+      <div style={{
+        position: "absolute", inset: 0, pointerEvents: "none",
+        background: "radial-gradient(ellipse at 15% 50%, rgba(139,92,246,0.03) 0%, transparent 50%), radial-gradient(ellipse at 85% 25%, rgba(34,197,94,0.025) 0%, transparent 45%), radial-gradient(ellipse at 50% 90%, rgba(245,158,11,0.02) 0%, transparent 40%)",
+      }} />
+
+      {/* ── HEADER ────────────────────────────────── */}
+      <div className="header-bar" style={{
+        position: "relative", zIndex: 10,
+        padding: "20px 28px 0",
+        display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+        flexWrap: "wrap", gap: "12px",
+      }}>
+        <div style={{ minWidth: "200px" }}>
+          <h1 style={{
+            fontSize: "clamp(20px, 3vw, 32px)",
+            fontWeight: 400,
+            margin: 0,
+            letterSpacing: "4px",
+            textTransform: "uppercase",
+            color: "#e8dcc8",
+            fontFamily: "'Cormorant Garamond', 'EB Garamond', Georgia, serif",
+          }}>
+            Ologiology
+          </h1>
+          <p style={{
+            fontSize: "12px", color: "#6b6054",
+            margin: "2px 0 0", fontStyle: "italic", letterSpacing: "0.8px",
+          }}>
+            {filteredNodes.length} of {OLOGIES.length} fields of inquiry
+          </p>
+        </div>
+
+        <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+          <input
+            type="text"
+            placeholder="Search ologies…"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            style={{
+              background: "rgba(255,255,255,0.035)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: "3px",
+              padding: "7px 13px",
+              color: "#e8dcc8",
+              fontSize: "13px",
+              fontFamily: "'EB Garamond', Georgia, serif",
+              width: "190px",
+              outline: "none",
+              letterSpacing: "0.4px",
+              transition: "border-color 0.2s",
+            }}
+            onFocus={e => e.target.style.borderColor = "rgba(255,255,255,0.18)"}
+            onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
+          />
+          <button onClick={pickRandom} title="Random ology" style={{
+            background: "rgba(255,255,255,0.035)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "3px",
+            padding: "6px 12px",
+            color: "#8a7e6b",
+            fontSize: "13px",
+            cursor: "pointer",
+            fontFamily: "'EB Garamond', Georgia, serif",
+            transition: "all 0.2s",
+            letterSpacing: "0.5px",
+          }}
+          onMouseEnter={e => { e.target.style.color = "#e8dcc8"; e.target.style.borderColor = "rgba(255,255,255,0.18)"; }}
+          onMouseLeave={e => { e.target.style.color = "#8a7e6b"; e.target.style.borderColor = "rgba(255,255,255,0.08)"; }}
+          >
+            ✦ Random
+          </button>
+          <button onClick={() => setShowAbout(true)} title="About" style={{
+            background: "rgba(255,255,255,0.035)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "3px",
+            padding: "6px 12px",
+            color: "#8a7e6b",
+            fontSize: "13px",
+            cursor: "pointer",
+            fontFamily: "'EB Garamond', Georgia, serif",
+            transition: "all 0.2s",
+            letterSpacing: "0.5px",
+          }}
+          onMouseEnter={e => { e.target.style.color = "#e8dcc8"; e.target.style.borderColor = "rgba(255,255,255,0.18)"; }}
+          onMouseLeave={e => { e.target.style.color = "#8a7e6b"; e.target.style.borderColor = "rgba(255,255,255,0.08)"; }}
+          >
+            About
+          </button>
+        </div>
+      </div>
+
+      {/* ── CATEGORY PILLS ────────────────────────── */}
+      <div className="category-bar" style={{
+        position: "relative", zIndex: 10,
+        padding: "10px 28px",
+        display: "flex", gap: "5px", flexWrap: "wrap", alignItems: "center",
+      }}>
+        <button
+          className="category-pill"
+          onClick={toggleAllCategories}
+          style={{
+            color: activeCategories.size === CATEGORIES.length ? "#8a7e6b" : "#6b6054",
+            borderColor: "rgba(255,255,255,0.1)",
+            fontStyle: "italic",
+            fontSize: "10.5px",
+          }}
+        >
+          {activeCategories.size === CATEGORIES.length ? "clear" : "all"}
+        </button>
+
+        {CATEGORIES.map(cat => {
+          const active = activeCategories.has(cat);
+          const color = CATEGORY_COLORS[cat];
+          const count = catCounts[cat] || 0;
+          return (
+            <button
+              key={cat}
+              className={`category-pill ${active ? "active" : ""}`}
+              onClick={() => toggleCategory(cat)}
+              style={{
+                background: active ? color.base + "12" : "transparent",
+                borderColor: active ? color.base + "40" : undefined,
+                color: active ? color.glow : undefined,
+              }}
+            >
+              <span style={{
+                display: "inline-block",
+                width: "5px", height: "5px",
+                borderRadius: "50%",
+                background: active ? color.base : "#3a3530",
+                marginRight: "5px",
+                verticalAlign: "middle",
+              }} />
+              {cat}
+              {active && count > 0 && (
+                <span style={{ marginLeft: "4px", opacity: 0.5 }}>({count})</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── GRAPH ─────────────────────────────────── */}
+      <div ref={containerRef} style={{
+        position: "relative",
+        width: "100%",
+        height: "calc(100vh - 120px)",
+        minHeight: "400px",
+      }}>
+        <svg
+          ref={svgRef}
+          width={dimensions.width}
+          height={dimensions.height}
+          style={{ display: "block", width: "100%", height: "100%" }}
+        />
+
+        {/* Zoom controls */}
+        <div className="zoom-controls" style={{
+          position: "absolute",
+          bottom: "24px", right: "24px",
+          display: "flex", flexDirection: "column", gap: "6px",
+          zIndex: 15,
+        }}>
+          <button className="zoom-btn" onClick={() => handleZoom(1.4)} title="Zoom in">+</button>
+          <button className="zoom-btn" onClick={() => handleZoom(0.7)} title="Zoom out">−</button>
+          <button className="zoom-btn" onClick={handleResetZoom} title="Reset view" style={{ fontSize: "12px" }}>⟲</button>
+        </div>
+
+        {/* ── DETAIL PANEL ──────────────────────────── */}
+        {selectedNode && (
+          <div className="detail-panel" style={{
+            borderColor: CATEGORY_COLORS[selectedNode.category]?.base + "30",
+            borderWidth: "1px", borderStyle: "solid",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <span style={{
+                  fontSize: "9px",
+                  textTransform: "uppercase",
+                  letterSpacing: "2.5px",
+                  color: CATEGORY_COLORS[selectedNode.category]?.glow,
+                  display: "block",
+                  marginBottom: "5px",
+                }}>
+                  {selectedNode.category}
+                </span>
+                <h2 style={{
+                  fontSize: "clamp(18px, 2.5vw, 24px)",
+                  fontWeight: 400,
+                  margin: 0,
+                  color: "#f0e6d3",
+                  letterSpacing: "0.5px",
+                  fontFamily: "'Cormorant Garamond', 'EB Garamond', Georgia, serif",
+                }}>
+                  {selectedNode.label}
+                </h2>
+              </div>
+              <button
+                onClick={e => { e.stopPropagation(); setSelected(null); }}
+                style={{
+                  background: "none", border: "none",
+                  color: "#5a5248", fontSize: "20px",
+                  cursor: "pointer", padding: "0 4px", lineHeight: 1,
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={e => e.target.style.color = "#e8dcc8"}
+                onMouseLeave={e => e.target.style.color = "#5a5248"}
+              >×</button>
+            </div>
+
+            <p style={{
+              fontSize: "14px", color: "#b0a48e",
+              margin: "10px 0 14px", lineHeight: 1.55,
+            }}>
+              {selectedNode.desc}
+            </p>
+
+            <div style={{
+              display: "flex", gap: "16px",
+              fontSize: "11px", color: "#6b6054",
+              flexWrap: "wrap", alignItems: "baseline",
+            }}>
+              <span title={obscurityLabel(selectedNode.obscurity)}>
+                Obscurity: <span style={{ color: "#9a8e78", letterSpacing: "1px" }}>
+                  {obscurityStars(selectedNode.obscurity)}
+                </span>
+                {" "}
+                <span style={{ color: "#7a7060", fontStyle: "italic" }}>
+                  {obscurityLabel(selectedNode.obscurity)}
+                </span>
+              </span>
+
+              {parentNode && (
+                <span>
+                  Branch of:{" "}
+                  <span
+                    className="clickable-ology"
+                    onClick={e => { e.stopPropagation(); setSelected(parentNode); }}
+                    style={{
+                      color: CATEGORY_COLORS[parentNode.category]?.glow,
+                      textDecorationColor: CATEGORY_COLORS[parentNode.category]?.base + "40",
+                    }}
+                  >{parentNode.label}</span>
+                </span>
+              )}
+            </div>
+
+            {childNodes.length > 0 && (
+              <div style={{
+                marginTop: "10px", paddingTop: "10px",
+                borderTop: "1px solid rgba(255,255,255,0.04)",
+                fontSize: "11px", color: "#6b6054",
+              }}>
+                Sub-fields:{" "}
+                {childNodes.slice(0, 8).map((c, i) => (
+                  <span key={c.id}>
+                    <span
+                      className="clickable-ology"
+                      onClick={e => { e.stopPropagation(); setSelected(c); }}
+                      style={{
+                        color: CATEGORY_COLORS[c.category]?.glow,
+                        textDecorationColor: CATEGORY_COLORS[c.category]?.base + "40",
+                      }}
+                    >{c.label}</span>
+                    {i < Math.min(childNodes.length, 8) - 1 ? ", " : ""}
+                  </span>
+                ))}
+                {childNodes.length > 8 && (
+                  <span style={{ fontStyle: "italic" }}> +{childNodes.length - 8} more</span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Hint text */}
+        {!selectedNode && graphReady && (
+          <div style={{
+            position: "absolute",
+            bottom: "20px", left: "50%",
+            transform: "translateX(-50%)",
+            fontSize: "11px",
+            color: "#302c26",
+            letterSpacing: "1.2px",
+            textAlign: "center",
+            fontStyle: "italic",
+            animation: "fadeIn 1.5s ease",
+            pointerEvents: "none",
+          }}>
+            click a node to explore · drag to rearrange · scroll to zoom
+          </div>
+        )}
+      </div>
+
+      {/* ── ABOUT PANEL ───────────────────────────── */}
+      {showAbout && (
+        <>
+          <div
+            style={{
+              position: "fixed", inset: 0, zIndex: 40,
+              background: "rgba(0,0,0,0.4)",
+              animation: "fadeIn 0.2s ease",
+            }}
+            onClick={() => setShowAbout(false)}
+          />
+          <div className="about-panel">
+            <button
+              onClick={() => setShowAbout(false)}
+              style={{
+                position: "absolute", top: "20px", right: "20px",
+                background: "none", border: "none",
+                color: "#5a5248", fontSize: "22px",
+                cursor: "pointer", lineHeight: 1,
+              }}
+            >×</button>
+
+            <div className="ornament" style={{ marginBottom: "28px" }}>✦ · ✦</div>
+
+            <h2 style={{
+              fontSize: "24px", fontWeight: 400,
+              letterSpacing: "3px", textTransform: "uppercase",
+              marginBottom: "8px", textAlign: "center",
+              fontFamily: "'Cormorant Garamond', 'EB Garamond', serif",
+            }}>
+              About This Project
+            </h2>
+            <p style={{
+              fontSize: "12px", color: "#6b6054",
+              textAlign: "center", fontStyle: "italic",
+              letterSpacing: "1px", marginBottom: "28px",
+            }}>
+              A cartography of human curiosity
+            </p>
+
+            <p style={{ fontSize: "14px", color: "#b0a48e", lineHeight: 1.7, marginBottom: "16px" }}>
+              <strong style={{ color: "#d4c8b0", fontWeight: 500 }}>Ologiology</strong> is an interactive visualization of every "-ology" — every formalized field of study that humanity has named and pursued. From the well-trodden paths of Biology and Psychology to the wonderfully obscure corners of Pogonology (beards) and Latrinology (restroom graffiti), this atlas maps the full breadth of human intellectual curiosity.
+            </p>
+            <p style={{ fontSize: "14px", color: "#b0a48e", lineHeight: 1.7, marginBottom: "24px" }}>
+              Each node represents a field of study. Lines connect parent disciplines to their sub-fields. The size of each node reflects how well-known the field is — the larger the node, the more familiar it is to most people.
+            </p>
+
+            <div className="ornament" style={{ margin: "20px 0" }}>· · ·</div>
+
+            <h3 style={{
+              fontSize: "12px", textTransform: "uppercase",
+              letterSpacing: "2px", color: "#8a7e6b",
+              marginBottom: "14px",
+            }}>
+              By the Numbers
+            </h3>
+
+            <div style={{ marginBottom: "20px" }}>
+              <div className="stat-row">
+                <span style={{ color: "#8a7e6b" }}>Total ologies</span>
+                <span style={{ color: "#d4c8b0" }}>{stats.total}</span>
+              </div>
+              <div className="stat-row">
+                <span style={{ color: "#8a7e6b" }}>Categories</span>
+                <span style={{ color: "#d4c8b0" }}>{stats.categories}</span>
+              </div>
+              <div className="stat-row">
+                <span style={{ color: "#8a7e6b" }}>Root disciplines</span>
+                <span style={{ color: "#d4c8b0" }}>{stats.roots}</span>
+              </div>
+              <div className="stat-row">
+                <span style={{ color: "#8a7e6b" }}>Sub-fields (linked)</span>
+                <span style={{ color: "#d4c8b0" }}>{stats.withParent}</span>
+              </div>
+            </div>
+
+            <h3 style={{
+              fontSize: "12px", textTransform: "uppercase",
+              letterSpacing: "2px", color: "#8a7e6b",
+              marginBottom: "14px",
+            }}>
+              Obscurity Breakdown
+            </h3>
+            <div style={{ marginBottom: "20px" }}>
+              {["Universally known", "Well-known", "Fairly known", "Niche", "Obscure", "Ultra-obscure"].map((label, i) => (
+                <div key={i} className="stat-row">
+                  <span style={{ color: "#8a7e6b" }}>
+                    <span style={{ letterSpacing: "1px", marginRight: "6px", color: "#5a5248" }}>
+                      {obscurityStars(i)}
+                    </span>
+                    {label}
+                  </span>
+                  <span style={{ color: "#d4c8b0" }}>{stats.byObscurity[i]}</span>
+                </div>
+              ))}
+            </div>
+
+            <h3 style={{
+              fontSize: "12px", textTransform: "uppercase",
+              letterSpacing: "2px", color: "#8a7e6b",
+              marginBottom: "14px",
+            }}>
+              How to Navigate
+            </h3>
+            <div style={{ fontSize: "13px", color: "#8a7e6b", lineHeight: 1.7 }}>
+              <p style={{ marginBottom: "8px" }}>
+                <strong style={{ color: "#b0a48e" }}>Click</strong> any node to see its description and connections.
+              </p>
+              <p style={{ marginBottom: "8px" }}>
+                <strong style={{ color: "#b0a48e" }}>Hover</strong> to highlight connected fields.
+              </p>
+              <p style={{ marginBottom: "8px" }}>
+                <strong style={{ color: "#b0a48e" }}>Drag</strong> nodes to rearrange the graph.
+              </p>
+              <p style={{ marginBottom: "8px" }}>
+                <strong style={{ color: "#b0a48e" }}>Scroll</strong> or use the +/− buttons to zoom.
+              </p>
+              <p style={{ marginBottom: "8px" }}>
+                <strong style={{ color: "#b0a48e" }}>Filter</strong> by category using the pills above the graph.
+              </p>
+              <p>
+                <strong style={{ color: "#b0a48e" }}>Search</strong> to find a specific field, or hit ✦ Random for a surprise.
+              </p>
+            </div>
+
+            <div className="ornament" style={{ marginTop: "32px" }}>✦</div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MOUNT
+// ═══════════════════════════════════════════════════════════════
+ReactDOM.render(React.createElement(Ologiology), document.getElementById("root"));
+</script>
+</body>
+</html>
