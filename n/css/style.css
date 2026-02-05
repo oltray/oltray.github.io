@@ -851,18 +851,24 @@ body {
     overflow: hidden;
 }
 
-/* iframe scaling */
 .project-image .project-preview iframe {
-    width: 100%;
-    height: 100%;
+    width: 125%;
+    height: 125%;
     border: none;
 
-    /* shrink app to fit card */
+    /* shrink app to fit card and center it */
     transform: scale(0.8);
-    transform-origin: top left;
+    transform-origin: center center;  /* ← Centers the scaling! */
 
     /* prevents scrollbars & accidental interaction */
     pointer-events: none;
+    
+    /* center the iframe */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-left: -62.5%;
+    margin-top: -62.5%;
 }
 
 .project-image img {
