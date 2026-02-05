@@ -3,104 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Remington Westbrook - Solutions Engineer</title>
-    <meta name="description" content="Portfolio of Remington Westbrook - Software Developer specializing in full-stack development">
-    <link rel="stylesheet" href="css/style.css">
+    <title>REMINGTON WESTBROOK - DIGITAL ARCHITECT</title>
+    <meta name="description" content="Remington Westbrook - Solutions Engineer crafting the future">
+    
+    <!-- Google Fonts - Choosing DISTINCTIVE fonts, not generic ones -->
+    <!-- Orbitron: Futuristic, geometric display font for headers -->
+    <!-- Space Mono: Technical monospace font for body -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Navigation -->
+    <!-- Grain texture overlay for that Y2K aesthetic -->
+    <div class="grain-overlay"></div>
+    
+    <!-- Custom cursor follower for extra flair -->
+    <div class="cursor-glow"></div>
+
+    <!-- Navigation - Floating glass morphism style -->
     <nav class="nav">
         <div class="nav-container">
-            <a href="#hero" class="logo">RW</a>
+            <a href="#hero" class="logo">
+                <span class="logo-bracket">[</span>
+                <span class="logo-text">RW</span>
+                <span class="logo-bracket">]</span>
+            </a>
             <ul class="nav-links">
-                <li><a href="#about">About</a></li>
-                <li><a href="#projects">Projects</a></li>
-                <li><a href="#skills">Skills</a></li>
-                <li><a href="#contact">Contact</a></li>
-                <li><a href="assets/resume.pdf" target="_blank" class="resume-btn">Resume</a></li>
+                <li><a href="#about" data-text="ABOUT">ABOUT</a></li>
+                <li><a href="#projects" data-text="WORK">WORK</a></li>
+                <li><a href="#skills" data-text="SKILLS">SKILLS</a></li>
+                <li><a href="#contact" data-text="CONTACT">CONTACT</a></li>
             </ul>
         </div>
     </nav>
 
-    <!-- Hero Section -->
+    <!-- Hero Section - Chrome text with 3D effects -->
     <section id="hero" class="hero">
-        <div class="container">
-            <h1 class="hero-title">
-                Hi, I'm <span class="gradient-text">Remington Westbrook</span>
-            </h1>
-            <p class="hero-subtitle">Solutions Engineer | Full-Stack Engineer | Problem Solver</p>
-            <p class="hero-description">
-                I build clean, efficient solutions that solve real problems. 
-                Currently looking for opportunities to create impactful software.
-            </p>
-            <div class="hero-buttons">
-                <a href="#projects" class="btn btn-primary">View My Work</a>
-                <a href="#contact" class="btn btn-secondary">Get In Touch</a>
-            </div>
+        <div class="hero-bg-shapes">
+            <!-- Floating geometric shapes in background -->
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
         </div>
-    </section>
-
-    <!-- About Section -->
-    <section id="about" class="section">
+        
         <div class="container">
-            <h2 class="section-title">About Me</h2>
-            <div class="about-content">
-                <div class="about-text">
-                    <p>
-                        I'm a solutions engineer with a BS in Computer Science, passionate about building 
-                        applications that make people's lives easier. I love solving complex problems with 
-                        elegant code and clean design.
-                    </p>
-                    <p>
-                        When I'm not coding, you can find me exploring new technologies, contributing to 
-                        open source, or working on side projects that push my skills forward.
-                    </p>
+            <div class="hero-content">
+                <!-- Glitch effect text -->
+                <div class="hero-label" data-text="◢ SYSTEMS ONLINE ◣">◢ SYSTEMS ONLINE ◣</div>
+                
+                <!-- Chrome text effect - the star of the show -->
+                <h1 class="hero-title chrome-text">
+                    <span class="line">REMINGTON</span>
+                    <span class="line">WESTBROOK</span>
+                </h1>
+                
+                <div class="hero-subtitle">
+                    <span class="role-tag">SOLUTIONS ENGINEER</span>
+                    <span class="separator">×</span>
+                    <span class="role-tag">FULL-STACK DEV</span>
+                    <span class="separator">×</span>
+                    <span class="role-tag">PROBLEM SOLVER</span>
+                </div>
+                
+                <p class="hero-description">
+                    Building the future, one line of code at a time. 
+                    Specializing in elegant solutions to complex problems.
+                </p>
+                
+                <div class="hero-buttons">
+                    <a href="#projects" class="btn btn-primary">
+                        <span class="btn-text">VIEW PROJECTS</span>
+                        <span class="btn-icon">→</span>
+                    </a>
+                    <a href="#contact" class="btn btn-secondary">
+                        <span class="btn-text">LET'S TALK</span>
+                        <span class="btn-icon">✦</span>
+                    </a>
+                </div>
+                
+                <!-- Scroll indicator with animation -->
+                <div class="scroll-indicator">
+                    <div class="scroll-line"></div>
+                    <span class="scroll-text">SCROLL TO EXPLORE</span>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Projects Section -->
-    <section id="projects" class="section section-dark">
+    <!-- About Section - Bento grid style -->
+    <section id="about" class="section about-section">
         <div class="container">
-            <h2 class="section-title">Featured Projects</h2>
-            <div class="projects-grid">
+            <h2 class="section-title" data-text="ABOUT_ME.exe">
+                <span class="title-number">01</span>
+                ABOUT_ME.exe
+            </h2>
+            
+            <div class="bento-grid">
+                <!-- Main about card -->
+                <div class="bento-card bento-large">
+                    <div class="card-glow"></div>
+                    <div class="card-content">
+                        <h3 class="card-title">WHO AM I?</h3>
+                        <p>
+                            I'm a solutions engineer with a BS in Computer Science, passionate about 
+                            building applications that make people's lives easier. I love solving 
+                            complex problems with elegant code and clean design.
+                        </p>
+                        <p>
+                            When I'm not coding, you can find me exploring new technologies, 
+                            contributing to open source, or working on side projects that push 
+                            my skills forward.
+                        </p>
+                        <div class="stats-row">
+                            <div class="stat">
+                                <div class="stat-number">5+</div>
+                                <div class="stat-label">Languages</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-number">∞</div>
+                                <div class="stat-label">Coffee</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-number">100%</div>
+                                <div class="stat-label">Passion</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
-                <!-- Finance Visualizer Project -->
-                <div class="project-card">
+                <!-- Education card -->
+                <div class="bento-card bento-small">
+                    <div class="card-glow"></div>
+                    <div class="card-content">
+                        <div class="card-icon">🎓</div>
+                        <h3 class="card-title">EDUCATION</h3>
+                        <p class="card-detail">BS Computer Science</p>
+                    </div>
+                </div>
+                
+                <!-- Currently card -->
+                <div class="bento-card bento-small">
+                    <div class="card-glow"></div>
+                    <div class="card-content">
+                        <div class="card-icon">⚡</div>
+                        <h3 class="card-title">CURRENTLY</h3>
+                        <p class="card-detail">Open to opportunities</p>
+                    </div>
+                </div>
+                
+                <!-- Location card with animated gradient -->
+                <div class="bento-card bento-medium gradient-card">
+                    <div class="card-content">
+                        <div class="card-icon">🌐</div>
+                        <h3 class="card-title">LOCATION</h3>
+                        <p class="card-detail">Remote / US-based</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section - 3D hover cards -->
+    <section id="projects" class="section projects-section">
+        <div class="container">
+            <h2 class="section-title" data-text="FEATURED_WORK.dll">
+                <span class="title-number">02</span>
+                FEATURED_WORK.dll
+            </h2>
+            
+            <div class="projects-grid">
+                <!-- Project 1 - Finance Visualizer -->
+                <div class="project-card" data-tilt>
+                    <div class="project-number">01</div>
                     <div class="project-image">
-                        <img src="assets/financevisualizer-preview.png" alt="Finance Visualizer">
+                        <img src="assets/financevisualizer-preview.png" alt="Finance Visualizer" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                        <div class="project-placeholder">
+                            <div class="placeholder-icon">💰</div>
+                        </div>
                     </div>
                     <div class="project-content">
-                        <h3>Finance Visualizer</h3>
-                        <p>
-                            A comprehensive finance tracking and visualization app that helps users manage 
-                            monthly expenses, track payment schedules, and gain insights into spending patterns. 
-                            Features include timeline views, category filtering, and payment reminders.
+                        <h3 class="project-title">Finance Visualizer</h3>
+                        <p class="project-description">
+                            A comprehensive finance tracking and visualization app that helps users 
+                            manage monthly expenses, track payment schedules, and gain insights into 
+                            spending patterns with beautiful timeline views.
                         </p>
                         <div class="project-tech">
                             <span class="tech-tag">React</span>
                             <span class="tech-tag">JavaScript</span>
-                            <span class="tech-tag">Tailwind CSS</span>
-                            <span class="tech-tag">Local Storage</span>
+                            <span class="tech-tag">Tailwind</span>
+                            <span class="tech-tag">LocalStorage</span>
                         </div>
                         <div class="project-links">
-                            <a href="https://reming.to/n/projects/financevisualizer" target="_blank" class="btn btn-small">Live Demo</a>
-                            <a href="https://github.com/oltray/financevisualizer" target="_blank" class="btn btn-small btn-outline">View Code</a>
+                            <a href="https://reming.to/n/projects/financevisualizer" target="_blank" class="project-link">
+                                <span>LIVE DEMO</span>
+                                <span class="link-arrow">↗</span>
+                            </a>
+                            <a href="https://github.com/oltray/financevisualizer" target="_blank" class="project-link">
+                                <span>CODE</span>
+                                <span class="link-arrow">→</span>
+                            </a>
                         </div>
                     </div>
                 </div>
 
-                <!-- Add more projects here -->
-                <div class="project-card">
+                <!-- Project 2 - Template -->
+                <div class="project-card" data-tilt>
+                    <div class="project-number">02</div>
                     <div class="project-image">
-                        <div class="project-placeholder">Project 2</div>
+                        <div class="project-placeholder" style="display: flex;">
+                            <div class="placeholder-icon">🚀</div>
+                        </div>
                     </div>
                     <div class="project-content">
-                        <h3>Project Name</h3>
-                        <p>
-                            Brief description of what this project does, the problem it solves, 
-                            and any notable features or challenges you overcame.
+                        <h3 class="project-title">Your Next Project</h3>
+                        <p class="project-description">
+                            Add your next amazing project here! Describe the problem it solves,
+                            the technologies you used, and what makes it special. Don't forget
+                            to add a screenshot!
                         </p>
                         <div class="project-tech">
                             <span class="tech-tag">Tech 1</span>
@@ -108,21 +230,31 @@
                             <span class="tech-tag">Tech 3</span>
                         </div>
                         <div class="project-links">
-                            <a href="#" class="btn btn-small">Live Demo</a>
-                            <a href="#" class="btn btn-small btn-outline">View Code</a>
+                            <a href="#" class="project-link">
+                                <span>LIVE DEMO</span>
+                                <span class="link-arrow">↗</span>
+                            </a>
+                            <a href="#" class="project-link">
+                                <span>CODE</span>
+                                <span class="link-arrow">→</span>
+                            </a>
                         </div>
                     </div>
                 </div>
 
-                <div class="project-card">
+                <!-- Project 3 - Template -->
+                <div class="project-card" data-tilt>
+                    <div class="project-number">03</div>
                     <div class="project-image">
-                        <div class="project-placeholder">Project 3</div>
+                        <div class="project-placeholder" style="display: flex;">
+                            <div class="placeholder-icon">✨</div>
+                        </div>
                     </div>
                     <div class="project-content">
-                        <h3>Project Name</h3>
-                        <p>
-                            Brief description of what this project does, the problem it solves, 
-                            and any notable features or challenges you overcame.
+                        <h3 class="project-title">Another Cool Project</h3>
+                        <p class="project-description">
+                            Showcase another project that demonstrates your skills and creativity.
+                            What challenges did you overcome? What did you learn? Make it count!
                         </p>
                         <div class="project-tech">
                             <span class="tech-tag">Tech 1</span>
@@ -130,23 +262,35 @@
                             <span class="tech-tag">Tech 3</span>
                         </div>
                         <div class="project-links">
-                            <a href="#" class="btn btn-small">Live Demo</a>
-                            <a href="#" class="btn btn-small btn-outline">View Code</a>
+                            <a href="#" class="project-link">
+                                <span>LIVE DEMO</span>
+                                <span class="link-arrow">↗</span>
+                            </a>
+                            <a href="#" class="project-link">
+                                <span>CODE</span>
+                                <span class="link-arrow">→</span>
+                            </a>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </section>
 
-    <!-- Skills Section -->
-    <section id="skills" class="section">
+    <!-- Skills Section - Animated cards -->
+    <section id="skills" class="section skills-section">
         <div class="container">
-            <h2 class="section-title">Skills & Technologies</h2>
-            <div class="skills-grid">
+            <h2 class="section-title" data-text="TECH_STACK.sys">
+                <span class="title-number">03</span>
+                TECH_STACK.sys
+            </h2>
+            
+            <div class="skills-container">
                 <div class="skill-category">
-                    <h3>Languages</h3>
+                    <div class="category-header">
+                        <span class="category-icon">⌨️</span>
+                        <h3>LANGUAGES</h3>
+                    </div>
                     <div class="skill-tags">
                         <span class="skill-tag">JavaScript</span>
                         <span class="skill-tag">Python</span>
@@ -155,17 +299,26 @@
                         <span class="skill-tag">SQL</span>
                     </div>
                 </div>
+
                 <div class="skill-category">
-                    <h3>Frontend</h3>
+                    <div class="category-header">
+                        <span class="category-icon">🎨</span>
+                        <h3>FRONTEND</h3>
+                    </div>
                     <div class="skill-tags">
                         <span class="skill-tag">React</span>
                         <span class="skill-tag">HTML/CSS</span>
                         <span class="skill-tag">Tailwind CSS</span>
                         <span class="skill-tag">Responsive Design</span>
+                        <span class="skill-tag">UI/UX</span>
                     </div>
                 </div>
+
                 <div class="skill-category">
-                    <h3>Backend</h3>
+                    <div class="category-header">
+                        <span class="category-icon">⚙️</span>
+                        <h3>BACKEND</h3>
+                    </div>
                     <div class="skill-tags">
                         <span class="skill-tag">Node.js</span>
                         <span class="skill-tag">Express</span>
@@ -173,8 +326,12 @@
                         <span class="skill-tag">Database Design</span>
                     </div>
                 </div>
+
                 <div class="skill-category">
-                    <h3>Tools & Other</h3>
+                    <div class="category-header">
+                        <span class="category-icon">🛠️</span>
+                        <h3>TOOLS & OTHER</h3>
+                    </div>
                     <div class="skill-tags">
                         <span class="skill-tag">Git/GitHub</span>
                         <span class="skill-tag">VS Code</span>
@@ -186,40 +343,88 @@
         </div>
     </section>
 
-    <!-- TODO: Contact Section -->
-    <section id="contact" class="section section-dark">
+    <!-- Contact Section - Futuristic terminal style -->
+    <section id="contact" class="section contact-section">
         <div class="container">
-            <h2 class="section-title">Get In Touch</h2>
+            <h2 class="section-title" data-text="CONNECT.bat">
+                <span class="title-number">04</span>
+                CONNECT.bat
+            </h2>
+            
             <div class="contact-content">
-                <p class="contact-text">
-                    I'm currently open to new opportunities and interesting projects. 
-                    Whether you have a question or just want to say hi, feel free to reach out!
-                </p>
-                <div class="contact-links">
-                    <a href="mailto:oltray@proton.me" class="contact-link">
-                        <span class="contact-icon">✉️</span>
-                        oltray@proton.me
-                    </a>
-                    <a href="https://github.com/oltray" target="_blank" class="contact-link">
-                        <span class="contact-icon">💻</span>
-                        github.com/oltray
-                    </a>
-                    <a href="https://www.linkedin.com/in/remington-westbrook/" target="_blank" class="contact-link">
-                        <span class="contact-icon">💼</span>
-                        LinkedIn Profile
-                    </a>
+                <div class="terminal-window">
+                    <div class="terminal-header">
+                        <div class="terminal-buttons">
+                            <span class="terminal-btn terminal-close"></span>
+                            <span class="terminal-btn terminal-minimize"></span>
+                            <span class="terminal-btn terminal-maximize"></span>
+                        </div>
+                        <div class="terminal-title">connection.exe</div>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="terminal-line">
+                            <span class="prompt">$</span>
+                            <span class="command">status --check</span>
+                        </div>
+                        <div class="terminal-output">
+                            >> CURRENTLY OPEN TO NEW OPPORTUNITIES
+                        </div>
+                        <div class="terminal-line">
+                            <span class="prompt">$</span>
+                            <span class="command">interested? Let's connect!</span>
+                        </div>
+                        
+                        <div class="contact-links">
+                            <a href="mailto:oltray@proton.me" class="contact-link" data-hover="SEND_EMAIL">
+                                <span class="link-icon">📧</span>
+                                <span class="link-label">EMAIL</span>
+                                <span class="link-value">oltray@proton.me</span>
+                                <span class="link-arrow">→</span>
+                            </a>
+                            
+                            <a href="https://github.com/oltray" target="_blank" class="contact-link" data-hover="VIEW_CODE">
+                                <span class="link-icon">💻</span>
+                                <span class="link-label">GITHUB</span>
+                                <span class="link-value">github.com/oltray</span>
+                                <span class="link-arrow">→</span>
+                            </a>
+                            
+                            <a href="https://www.linkedin.com/in/remington-westbrook/" target="_blank" class="contact-link" data-hover="CONNECT_NOW">
+                                <span class="link-icon">💼</span>
+                                <span class="link-label">LINKEDIN</span>
+                                <span class="link-value">remington-westbrook</span>
+                                <span class="link-arrow">→</span>
+                            </a>
+                        </div>
+                        
+                        <div class="terminal-line terminal-cursor">
+                            <span class="prompt">$</span>
+                            <span class="cursor-blink">_</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- TODO: Footer -->
+    <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2026 Remington Westbrook. Built with care.</p>
+            <div class="footer-content">
+                <p class="footer-text">
+                    <span class="footer-copyright">© 2026 REMINGTON WESTBROOK</span>
+                    <span class="footer-separator">×</span>
+                    <span class="footer-tagline">BUILT WITH PASSION</span>
+                </p>
+                <div class="footer-tech">
+                    <span class="tech-badge">HTML</span>
+                    <span class="tech-badge">CSS</span>
+                    <span class="tech-badge">JAVASCRIPT</span>
+                </div>
+            </div>
         </div>
     </footer>
 
-    <script src="js/main.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>
