@@ -1,4 +1,7 @@
-
+// ============================================
+// REMINGTON WESTBROOK - Y2K PORTFOLIO JS
+// Interactive elements and animations
+// ============================================
 
 // === CUSTOM CURSOR GLOW EFFECT ===
 // Creates a glowing cursor that follows the mouse
