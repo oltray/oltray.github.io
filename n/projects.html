@@ -1,759 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projects - Remington Westbrook</title>
-    <meta name="description" content="Portfolio of projects by Remington Westbrook">
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="css/style.css">
-    <style>
-        /* ===== ENHANCED PROJECT CARD SYSTEM ===== */
-        
-        .projects-grid {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 2rem;
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-
-        /* Compact card state */
-        .project-card {
-            width: 280px;
-            height: 360px;
-            background: rgba(18, 10, 33, 0.6);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            overflow: hidden;
-            position: relative;
-            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: pointer;
-            transform-style: preserve-3d;
-        }
-
-        /* Expanded card state on hover */
-        .project-card:hover {
-            width: 600px;
-            height: 520px;
-            z-index: 100;
-            border-color: rgba(255, 0, 128, 0.4);
-            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.8),
-                        0 0 60px rgba(255, 0, 128, 0.3),
-                        0 0 100px rgba(176, 38, 255, 0.2);
-            transform: translateY(-10px);
-        }
-
-        /* Responsive: max 5 cards per row */
-        @media (min-width: 1600px) {
-            .projects-grid {
-                max-width: 1600px;
-            }
-        }
-
-        @media (max-width: 1599px) and (min-width: 1280px) {
-            .projects-grid {
-                max-width: 1280px;
-            }
-        }
-
-        @media (max-width: 1279px) and (min-width: 960px) {
-            .projects-grid {
-                max-width: 960px;
-            }
-        }
-
-        @media (max-width: 959px) and (min-width: 640px) {
-            .projects-grid {
-                max-width: 640px;
-            }
-        }
-
-        @media (max-width: 639px) {
-            .project-card {
-                width: 100%;
-                max-width: 350px;
-            }
-            .project-card:hover {
-                width: 100%;
-                max-width: 350px;
-                height: auto;
-            }
-        }
-
-        /* Project number badge */
-        .project-number {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 2.5rem;
-            font-weight: 900;
-            background: var(--gradient-main);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            z-index: 10;
-            transition: all 0.4s ease;
-            opacity: 0.4;
-        }
-
-        .project-card:hover .project-number {
-            font-size: 1.5rem;
-            opacity: 0.6;
-        }
-
-        /* Compact view: Thumbnail with icon and title */
-        .project-thumbnail {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            background: linear-gradient(135deg, #1a0f2e 0%, #2d1b4e 100%);
-            transition: opacity 0.4s ease;
-        }
-
-        .project-card:hover .project-thumbnail {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        /* Screenshot overlay on thumbnail */
-        .thumbnail-screenshot {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0.3;
-            filter: blur(2px);
-        }
-
-        .thumbnail-content {
-            position: relative;
-            z-index: 2;
-            text-align: center;
-        }
-
-        .thumbnail-icon {
-            font-size: 4rem;
-            margin-bottom: 1.5rem;
-            filter: drop-shadow(0 0 20px currentColor);
-        }
-
-        .thumbnail-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.35rem;
-            font-weight: 700;
-            background: var(--gradient-main);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
-        }
-
-        .thumbnail-subtitle {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        /* Hover hint */
-        .hover-hint {
-            position: absolute;
-            bottom: 1.5rem;
-            left: 50%;
-            transform: translateX(-50%);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.7rem;
-            color: var(--neon-cyan);
-            opacity: 0.6;
-            letter-spacing: 0.1em;
-            animation: pulse 2s ease-in-out infinite;
-            z-index: 3;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 0.4; }
-            50% { opacity: 0.8; }
-        }
-
-        .project-card:hover .hover-hint {
-            opacity: 0;
-        }
-
-        /* Expanded view: Full details */
-        .project-expanded {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s ease;
-            display: grid;
-            grid-template-rows: 300px 1fr;
-        }
-
-        .project-card:hover .project-expanded {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        /* Preview area with screenshot */
-        .project-preview-area {
-            position: relative;
-            overflow: hidden;
-            background: linear-gradient(135deg, #0a0118 0%, #1a0f2e 100%);
-            border-bottom: 1px solid rgba(255, 0, 128, 0.2);
-        }
-
-        /* Screenshot as primary display */
-        .preview-screenshot {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-
-        .project-card:hover .preview-screenshot {
-            transform: scale(1.05);
-        }
-
-        /* Optional: Live iframe (only if you enable it) */
-        .project-preview-frame {
-            position: absolute;
-            width: 140%;
-            height: 140%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.7);
-            border: none;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.5s ease, transform 0.3s ease;
-            z-index: 2;
-        }
-
-        /* Show iframe when loaded (optional feature) */
-        .project-preview-frame.loaded {
-            opacity: 1;
-        }
-
-        .project-card:hover .project-preview-frame.loaded {
-            transform: translate(-50%, -50%) scale(0.72);
-        }
-
-        /* Placeholder when no screenshot */
-        .preview-placeholder {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 5rem;
-            opacity: 0.2;
-        }
-
-        /* Hide placeholder if screenshot exists */
-        .preview-screenshot ~ .preview-placeholder {
-            display: none;
-        }
-
-        /* Loading spinner */
-        .preview-loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(0, 255, 249, 0.2);
-            border-top-color: var(--neon-cyan);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            opacity: 0;
-            z-index: 3;
-        }
-
-        .preview-loading.active {
-            opacity: 1;
-        }
-
-        @keyframes spin {
-            to { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-
-        /* Details section */
-        .project-details {
-            padding: 1.5rem;
-            overflow-y: auto;
-            background: rgba(10, 1, 24, 0.9);
-        }
-
-        .project-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-            background: var(--gradient-main);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            line-height: 1.2;
-        }
-
-        .project-description {
-            color: var(--text-secondary);
-            margin-bottom: 1rem;
-            line-height: 1.6;
-            font-size: 0.95rem;
-        }
-
-        .project-tech {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .tech-tag {
-            font-family: 'Orbitron', sans-serif;
-            padding: 0.4rem 0.9rem;
-            background: rgba(0, 255, 249, 0.1);
-            border: 1px solid var(--neon-cyan);
-            border-radius: 50px;
-            color: var(--neon-cyan);
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            transition: all 0.3s ease;
-        }
-
-        .tech-tag:hover {
-            background: var(--neon-cyan);
-            color: var(--bg-dark);
-            transform: translateY(-2px);
-        }
-
-        .project-links {
-            display: flex;
-            gap: 0.75rem;
-            margin-top: 1rem;
-        }
-
-        .project-link {
-            font-family: 'Orbitron', sans-serif;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.25rem;
-            background: rgba(255, 0, 128, 0.1);
-            border: 2px solid var(--neon-pink);
-            border-radius: 50px;
-            color: var(--neon-pink);
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 0.8rem;
-            letter-spacing: 0.05em;
-            transition: all 0.3s ease;
-            flex: 1;
-            justify-content: center;
-        }
-
-        .project-link:hover {
-            background: var(--neon-pink);
-            color: var(--bg-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(255, 0, 128, 0.4);
-        }
-
-        .link-arrow {
-            font-size: 1.1rem;
-            transition: transform 0.3s ease;
-        }
-
-        .project-link:hover .link-arrow {
-            transform: translateX(3px);
-        }
-
-        /* Glow effect on card */
-        .card-glow {
-            position: absolute;
-            inset: -2px;
-            background: var(--gradient-main);
-            border-radius: 20px;
-            opacity: 0;
-            filter: blur(20px);
-            z-index: -1;
-            transition: opacity 0.4s ease;
-        }
-
-        .project-card:hover .card-glow {
-            opacity: 0.4;
-        }
-
-        /* Stagger animation on load */
-        @keyframes fadeInScale {
-            from {
-                opacity: 0;
-                transform: scale(0.8) translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        .project-card {
-            animation: fadeInScale 0.6s ease-out backwards;
-        }
-
-        .project-card:nth-child(1) { animation-delay: 0.1s; }
-        .project-card:nth-child(2) { animation-delay: 0.2s; }
-        .project-card:nth-child(3) { animation-delay: 0.3s; }
-        .project-card:nth-child(4) { animation-delay: 0.4s; }
-        .project-card:nth-child(5) { animation-delay: 0.5s; }
-        .project-card:nth-child(6) { animation-delay: 0.6s; }
-        .project-card:nth-child(7) { animation-delay: 0.7s; }
-        .project-card:nth-child(8) { animation-delay: 0.8s; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projects — Remington Westbrook</title>
+  <meta name="description" content="Portfolio of projects by Remington Westbrook">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Orbitron:wght@400;700;900&family=Source+Code+Pro:wght@300;400;600&family=Playfair+Display:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="grain-overlay"></div>
-    <div class="cursor-glow"></div>
+  <div class="noise"></div>
 
-    <!-- Navigation -->
-    <nav class="nav">
-        <div class="nav-container">
-            <a href="index.html" class="logo">
-                <span class="logo-bracket">[</span>
-                <span class="logo-text">RW</span>
-                <span class="logo-bracket">]</span>
-            </a>
-            <ul class="nav-links">
-                <li><a href="index.html" data-text="HOME">HOME</a></li>
-                <li><a href="projects.html" class="active" data-text="PROJECTS">PROJECTS</a></li>
-                <li><a href="blog.html" data-text="BLOG">BLOG</a></li>
-                <li><a href="about.html" data-text="ABOUT">ABOUT</a></li>
-                <li><a href="contact.html" data-text="CONTACT">CONTACT</a></li>
-            </ul>
-        </div>
-    </nav>
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="left">
+      <div class="red-dot"></div>
+      <span>SYS.STATUS: NOMINAL</span>
+      <span class="blink">▋</span>
+    </div>
+    <div class="right-info"><span id="clock">00:00:00</span></div>
+  </div>
 
-    <!-- Page Hero -->
-    <section class="page-hero">
-        <div class="container">
-            <div class="page-hero-content">
-                <h1 class="page-title chrome-text">
-                    <span class="line">PROJECTS</span>
-                </h1>
-                <p class="page-subtitle">
-                    Hover to explore. Click to experience.
-                </p>
+  <!-- NAV -->
+  <nav>
+    <a href="index.html" class="nav-logo">RW</a>
+    <button class="hamburger" onclick="this.classList.toggle('open');document.getElementById('navLinks').classList.toggle('open')" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html">HOME</a></li>
+      <li><a href="projects.html" class="active">PROJECTS</a></li>
+      <li><a href="blog.html">BLOG</a></li>
+      <li><a href="about.html">ABOUT</a></li>
+      <li><a href="contact.html">CONTACT</a></li>
+    </ul>
+  </nav>
+
+  <!-- PAGE HERO -->
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-content">
+        <div class="page-hero-eyebrow">ARCHIVE — ACTIVE SYSTEMS</div>
+        <h1 class="page-title">PROJECTS</h1>
+        <p class="page-subtitle">Applications built with intention. Click to explore.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DIVIDER -->
+  <div class="section-divider">
+    <div class="line"></div>
+    <div class="diamond"></div>
+    <div class="line"></div>
+  </div>
+
+  <!-- PROJECTS GRID -->
+  <section class="section">
+    <div class="container">
+      <div class="projects-grid">
+
+        <!-- Finance Visualizer -->
+        <div class="project-tile reveal">
+          <div class="tile-index">001</div>
+          <h3 class="tile-title">FINANCE VISUALIZER</h3>
+          <p class="tile-desc">A comprehensive finance tracking app. Track monthly expenses, visualize payment timelines, and manage your budget with clarity.</p>
+          <div class="tile-tech">
+            <span>React</span>
+            <span>JavaScript</span>
+            <span>Tailwind</span>
+          </div>
+          <div class="tile-footer">
+            <div class="tile-links">
+              <a href="https://reming.to/n/projects/finance-visualizer.html" target="_blank">OPEN ↗</a>
+              <a href="https://github.com/oltray/financevisualizer" target="_blank">CODE →</a>
             </div>
+            <div class="tile-arrow">↗</div>
+          </div>
         </div>
-    </section>
 
-    <!-- Projects Grid -->
-    <section class="section projects-section">
-        <div class="container">
-            <div class="projects-grid">
-                
-                <!-- Finance Visualizer -->
-                <div class="project-card">
-                    <div class="card-glow"></div>
-                    <div class="project-number">01</div>
-                    
-                    <!-- Compact View -->
-                    <div class="project-thumbnail">
-                        <!-- Optional: Add screenshot as background -->
-                        <img 
-                            src="images/projects/finance-visualizer-screenshot.png" 
-                            alt="Finance Visualizer" 
-                            class="thumbnail-screenshot"
-                            onerror="this.style.display='none'"
-                        >
-                        <div class="thumbnail-content">
-                            <div class="thumbnail-icon">💰</div>
-                            <h3 class="thumbnail-title">Finance Visualizer</h3>
-                            <p class="thumbnail-subtitle">Y2K Budget Tracker</p>
-                        </div>
-                        <div class="hover-hint">HOVER TO PREVIEW</div>
-                    </div>
-                    
-                    <!-- Expanded View -->
-                    <div class="project-expanded">
-                        <div class="project-preview-area">
-                            <div class="preview-loading"></div>
-                            
-                            <!-- Screenshot (primary display) -->
-                            <img 
-                                src="images/projects/finance-visualizer-screenshot.png" 
-                                alt="Finance Visualizer Preview" 
-                                class="preview-screenshot"
-                                onerror="this.style.display='none'"
-                            >
-                            
-                            <!-- Fallback placeholder if no screenshot -->
-                            <div class="preview-placeholder">💰</div>
-                            
-                            <!-- Optional: Live iframe (disabled by default for reliability) -->
-                           
-                            <iframe 
-                                class="project-preview-frame" 
-                                data-src="https://reming.to/n/projects/finance-visualizer.html"
-                            ></iframe>
-                            
-                        </div>
-                        <div class="project-details">
-                            <h3 class="project-title">Finance Visualizer</h3>
-                            <p class="project-description">
-                                A comprehensive finance tracking app with Y2K styling. Track monthly expenses, 
-                                visualize payment timelines, and manage your budget with neon-powered clarity.
-                            </p>
-                            <div class="project-tech">
-                                <span class="tech-tag">React</span>
-                                <span class="tech-tag">JavaScript</span>
-                                <span class="tech-tag">Tailwind</span>
-                            </div>
-                            <div class="project-links">
-                                <a href="https://reming.to/n/projects/finance-visualizer.html" target="_blank" class="project-link">
-                                    <span>OPEN APP</span>
-                                    <span class="link-arrow">→</span>
-                                </a>
-                                <a href="https://github.com/oltray/financevisualizer" target="_blank" class="project-link">
-                                    <span>CODE</span>
-                                    <span class="link-arrow">↗</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Ologiology -->
-                <div class="project-card">
-                    <div class="card-glow"></div>
-                    <div class="project-number">02</div>
-                    
-                    <!-- Compact View -->
-                    <div class="project-thumbnail">
-                        <img 
-                            src="images/projects/ologiology-screenshot.png" 
-                            alt="Ologiology" 
-                            class="thumbnail-screenshot"
-                            onerror="this.style.display='none'"
-                        >
-                        <div class="thumbnail-content">
-                            <div class="thumbnail-icon">🚀</div>
-                            <h3 class="thumbnail-title">Ologiology</h3>
-                            <p class="thumbnail-subtitle">React SPA</p>
-                        </div>
-                        <div class="hover-hint">HOVER TO PREVIEW</div>
-                    </div>
-                    
-                    <!-- Expanded View -->
-                    <div class="project-expanded">
-                        <div class="project-preview-area">
-                            <div class="preview-loading"></div>
-                            
-                            <img 
-                                src="images/projects/ologiology-screenshot.png" 
-                                alt="Ologiology Preview" 
-                                class="preview-screenshot"
-                                onerror="this.style.display='none'"
-                            >
-                            
-                            <div class="preview-placeholder">🚀</div>
-                            
-                            
-                            <iframe 
-                                class="project-preview-frame" 
-                                data-src="https://reming.to/n/ologiology.html"
-                            ></iframe>
-                          
-                        </div>
-                        <div class="project-details">
-                            <h3 class="project-title">Ologiology</h3>
-                            <p class="project-description">
-                                A modern single-page application built with React 18 and styled with Tailwind CSS. 
-                                Features component-based architecture with custom animations and responsive design.
-                            </p>
-                            <div class="project-tech">
-                                <span class="tech-tag">React</span>
-                                <span class="tech-tag">Tailwind</span>
-                                <span class="tech-tag">Lucide</span>
-                            </div>
-                            <div class="project-links">
-                                <a href="https://reming.to/n/projects/ologiology.html" target="_blank" class="project-link">
-                                    <span>OPEN APP</span>
-                                    <span class="link-arrow">↗</span>
-                                </a>
-                                <a href="https://github.com/oltray/ologiology" target="_blank" class="project-link">
-                                    <span>CODE</span>
-                                    <span class="link-arrow">→</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 
-                ========================================
-                TEMPLATE PROJECT CARD - Copy this to add new projects
-                ========================================
-                
-                <div class="project-card">
-                    <div class="card-glow"></div>
-                    <div class="project-number">03</div>
-                    
-                    <div class="project-thumbnail">
-                        <img 
-                            src="images/projects/your-project-screenshot.png" 
-                            alt="Your Project Name" 
-                            class="thumbnail-screenshot"
-                            onerror="this.style.display='none'"
-                        >
-                        <div class="thumbnail-content">
-                            <div class="thumbnail-icon">⚡</div>
-                            <h3 class="thumbnail-title">Project Name</h3>
-                            <p class="thumbnail-subtitle">Short Description</p>
-                        </div>
-                        <div class="hover-hint">HOVER TO PREVIEW</div>
-                    </div>
-                    
-                    <div class="project-expanded">
-                        <div class="project-preview-area">
-                            <div class="preview-loading"></div>
-                            
-                            <img 
-                                src="images/projects/your-project-screenshot.png" 
-                                alt="Project Preview" 
-                                class="preview-screenshot"
-                                onerror="this.style.display='none'"
-                            >
-                            
-                            <div class="preview-placeholder">⚡</div>
-                        </div>
-                        <div class="project-details">
-                            <h3 class="project-title">Your Project Title</h3>
-                            <p class="project-description">
-                                Detailed description of your project. What it does, what problems it solves, 
-                                what makes it special.
-                            </p>
-                            <div class="project-tech">
-                                <span class="tech-tag">Tech</span>
-                                <span class="tech-tag">Stack</span>
-                                <span class="tech-tag">Here</span>
-                            </div>
-                            <div class="project-links">
-                                <a href="https://your-project-url.com" target="_blank" class="project-link">
-                                    <span>OPEN APP</span>
-                                    <span class="link-arrow">→</span>
-                                </a>
-                                <a href="https://github.com/yourusername/yourrepo" target="_blank" class="project-link">
-                                    <span>CODE</span>
-                                    <span class="link-arrow">↗</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                -->
-
+        <!-- Ologiology -->
+        <div class="project-tile reveal">
+          <div class="tile-index">002</div>
+          <h3 class="tile-title">OLOGIOLOGY</h3>
+          <p class="tile-desc">A modern single-page application built with React 18 and Tailwind CSS. Component-based architecture with custom animations.</p>
+          <div class="tile-tech">
+            <span>React</span>
+            <span>Tailwind</span>
+            <span>Lucide</span>
+          </div>
+          <div class="tile-footer">
+            <div class="tile-links">
+              <a href="https://reming.to/n/projects/ologiology.html" target="_blank">OPEN ↗</a>
+              <a href="https://github.com/oltray/ologiology" target="_blank">CODE →</a>
             </div>
+            <div class="tile-arrow">↗</div>
+          </div>
         </div>
-    </section>
 
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <p class="footer-text">
-                    <span class="footer-copyright">© 2026 REMINGTON WESTBROOK</span>
-                    <span class="footer-separator">×</span>
-                    <span class="footer-tagline">BUILT WITH PASSION & CAFFEINE</span>
-                </p>
-                <div class="footer-tech">
-                    <span class="tech-badge">HTML</span>
-                    <span class="tech-badge">CSS</span>
-                    <span class="tech-badge">JS</span>
-                </div>
+        <!--
+        ========================================
+        TEMPLATE — Copy to add new projects
+        ========================================
+
+        <div class="project-tile reveal">
+          <div class="tile-index">003</div>
+          <h3 class="tile-title">PROJECT NAME</h3>
+          <p class="tile-desc">Description of what the project does and why it matters.</p>
+          <div class="tile-tech">
+            <span>Tech</span>
+            <span>Stack</span>
+          </div>
+          <div class="tile-footer">
+            <div class="tile-links">
+              <a href="#" target="_blank">OPEN ↗</a>
+              <a href="#" target="_blank">CODE →</a>
             </div>
+            <div class="tile-arrow">↗</div>
+          </div>
         </div>
-    </footer>
+        -->
 
-    <script src="js/main.js"></script>
-    <script>
-        // ===== PROJECT CARD INTERACTIONS =====
-        
-        // Optional: Lazy load iframes on hover (if enabled)
-        const cards = document.querySelectorAll('.project-card');
-        
-        cards.forEach(card => {
-            let iframeLoaded = false;
-            
-            card.addEventListener('mouseenter', function() {
-                // Load iframe if it exists and hasn't been loaded
-                if (!iframeLoaded) {
-                    const iframe = this.querySelector('iframe[data-src]');
-                    if (iframe) {
-                        const loading = this.querySelector('.preview-loading');
-                        if (loading) loading.classList.add('active');
-                        
-                        // Delay iframe load for smoother transition
-                        setTimeout(() => {
-                            iframe.src = iframe.dataset.src;
-                            iframeLoaded = true;
-                            
-                            // Mark as loaded and hide spinner when ready
-                            iframe.addEventListener('load', function() {
-                                this.classList.add('loaded');
-                                if (loading) loading.classList.remove('active');
-                            });
-                            
-                            // Remove spinner after timeout even if load fails
-                            setTimeout(() => {
-                                if (loading) loading.classList.remove('active');
-                            }, 3000);
-                        }, 300);
-                    }
-                }
-            });
-        });
+      </div>
+    </div>
+  </section>
 
-        // Enhanced cursor glow effect
-        const cursorGlow = document.querySelector('.cursor-glow');
-        
-        if (cursorGlow) {
-            document.addEventListener('mousemove', (e) => {
-                cursorGlow.style.left = e.clientX + 'px';
-                cursorGlow.style.top = e.clientY + 'px';
-            });
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">RW</div>
+    <div class="footer-copy">© 2026 REMINGTON WESTBROOK</div>
+    <div class="footer-tech">
+      <span>HTML</span>
+      <span>CSS</span>
+      <span>JS</span>
+    </div>
+  </footer>
 
-            // Enhance cursor on card hover
-            cards.forEach(card => {
-                card.addEventListener('mouseenter', function() {
-                    cursorGlow.style.width = '60px';
-                    cursorGlow.style.height = '60px';
-                    cursorGlow.style.opacity = '0.8';
-                });
-                
-                card.addEventListener('mouseleave', function() {
-                    cursorGlow.style.width = '30px';
-                    cursorGlow.style.height = '30px';
-                    cursorGlow.style.opacity = '0.6';
-                });
-            });
-        }
-    </script>
+  <script src="js/main.js"></script>
 </body>
 </html>

@@ -1,121 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact - Remington Westbrook</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact — Remington Westbrook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Orbitron:wght@400;700;900&family=Source+Code+Pro:wght@300;400;600&family=Playfair+Display:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="grain-overlay"></div>
-    <div class="cursor-glow"></div>
+  <div class="noise"></div>
 
-    <nav class="nav">
-        <div class="nav-container">
-            <a href="index.html" class="logo">
-                <span class="logo-bracket">[</span>
-                <span class="logo-text">RW</span>
-                <span class="logo-bracket">]</span>
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="left">
+      <div class="red-dot"></div>
+      <span>SYS.STATUS: NOMINAL</span>
+      <span class="blink">▋</span>
+    </div>
+    <div class="right-info"><span id="clock">00:00:00</span></div>
+  </div>
+
+  <!-- NAV -->
+  <nav>
+    <a href="index.html" class="nav-logo">RW</a>
+    <button class="hamburger" onclick="this.classList.toggle('open');document.getElementById('navLinks').classList.toggle('open')" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html">HOME</a></li>
+      <li><a href="projects.html">PROJECTS</a></li>
+      <li><a href="blog.html">BLOG</a></li>
+      <li><a href="about.html">ABOUT</a></li>
+      <li><a href="contact.html" class="active">CONTACT</a></li>
+    </ul>
+  </nav>
+
+  <!-- PAGE HERO -->
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-content">
+        <div class="page-hero-eyebrow">FREQUENCY — OPEN CHANNEL</div>
+        <h1 class="page-title">CONTACT</h1>
+        <p class="page-subtitle">Let's build something amazing together.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DIVIDER -->
+  <div class="section-divider">
+    <div class="line"></div>
+    <div class="diamond"></div>
+    <div class="line"></div>
+  </div>
+
+  <!-- TERMINAL CONTACT -->
+  <section class="section">
+    <div class="container">
+      <div class="terminal-window">
+        <div class="terminal-header">
+          <div class="terminal-buttons">
+            <span class="terminal-btn terminal-close"></span>
+            <span class="terminal-btn terminal-minimize"></span>
+            <span class="terminal-btn terminal-maximize"></span>
+          </div>
+          <div class="terminal-title">connection.exe</div>
+        </div>
+        <div class="terminal-body">
+          <div class="terminal-line">
+            <span class="prompt">$</span>
+            <span class="command">status --check</span>
+          </div>
+          <div class="terminal-output">
+            >> CURRENTLY OPEN TO NEW OPPORTUNITIES
+          </div>
+          <div class="terminal-line">
+            <span class="prompt">$</span>
+            <span class="command">interested? Let's connect!</span>
+          </div>
+
+          <div class="contact-links">
+            <a href="mailto:oltray@proton.me" class="contact-link">
+              <span class="link-icon">📧</span>
+              <span class="link-label">EMAIL</span>
+              <span class="link-value">oltray@proton.me</span>
+              <span class="link-arrow">→</span>
             </a>
-            <ul class="nav-links">
-                <li><a href="index.html" data-text="HOME">HOME</a></li>
-                <li><a href="projects.html" data-text="PROJECTS">PROJECTS</a></li>
-                <li><a href="blog.html" data-text="BLOG">BLOG</a></li>
-                <li><a href="about.html" data-text="ABOUT">ABOUT</a></li>
-                <li><a href="contact.html" class="active" data-text="CONTACT">CONTACT</a></li>
-            </ul>
-        </div>
-    </nav>
+            <a href="https://github.com/oltray" target="_blank" class="contact-link">
+              <span class="link-icon">💻</span>
+              <span class="link-label">GITHUB</span>
+              <span class="link-value">github.com/oltray</span>
+              <span class="link-arrow">→</span>
+            </a>
+            <a href="https://www.linkedin.com/in/remington-westbrook/" target="_blank" class="contact-link">
+              <span class="link-icon">💼</span>
+              <span class="link-label">LINKEDIN</span>
+              <span class="link-value">remington-westbrook</span>
+              <span class="link-arrow">→</span>
+            </a>
+          </div>
 
-    <section class="page-hero">
-        <div class="container">
-            <div class="page-hero-content">
-                <h1 class="page-title chrome-text">
-                    <span class="line">CONTACT</span>
-                </h1>
-                <p class="page-subtitle">Let's build something amazing together.</p>
-            </div>
+          <div class="terminal-line">
+            <span class="prompt">$</span>
+            <span class="cursor-blink">_</span>
+          </div>
         </div>
-    </section>
+      </div>
+    </div>
+  </section>
 
-    <section class="section contact-section">
-        <div class="container">
-            <div class="contact-content">
-                <div class="terminal-window">
-                    <div class="terminal-header">
-                        <div class="terminal-buttons">
-                            <span class="terminal-btn terminal-close"></span>
-                            <span class="terminal-btn terminal-minimize"></span>
-                            <span class="terminal-btn terminal-maximize"></span>
-                        </div>
-                        <div class="terminal-title">connection.exe</div>
-                    </div>
-                    <div class="terminal-body">
-                        <div class="terminal-line">
-                            <span class="prompt">$</span>
-                            <span class="command">status --check</span>
-                        </div>
-                        <div class="terminal-output">
-                            >> CURRENTLY OPEN TO NEW OPPORTUNITIES
-                        </div>
-                        <div class="terminal-line">
-                            <span class="prompt">$</span>
-                            <span class="command">interested? Let's connect!</span>
-                        </div>
-                        
-                        <div class="contact-links">
-                            <a href="mailto:oltray@proton.me" class="contact-link" data-hover="SEND_EMAIL">
-                                <span class="link-icon">📧</span>
-                                <span class="link-label">EMAIL</span>
-                                <span class="link-value">oltray@proton.me</span>
-                                <span class="link-arrow">→</span>
-                            </a>
-                            
-                            <a href="https://github.com/oltray" target="_blank" class="contact-link" data-hover="VIEW_CODE">
-                                <span class="link-icon">💻</span>
-                                <span class="link-label">GITHUB</span>
-                                <span class="link-value">github.com/oltray</span>
-                                <span class="link-arrow">→</span>
-                            </a>
-                            
-                            <a href="https://www.linkedin.com/in/remington-westbrook/" target="_blank" class="contact-link" data-hover="CONNECT_NOW">
-                                <span class="link-icon">💼</span>
-                                <span class="link-label">LINKEDIN</span>
-                                <span class="link-value">remington-westbrook</span>
-                                <span class="link-arrow">→</span>
-                            </a>
-                        </div>
-                        
-                        <div class="terminal-line terminal-cursor">
-                            <span class="prompt">$</span>
-                            <span class="cursor-blink">_</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">RW</div>
+    <div class="footer-copy">© 2026 REMINGTON WESTBROOK</div>
+    <div class="footer-tech">
+      <span>HTML</span>
+      <span>CSS</span>
+      <span>JS</span>
+    </div>
+  </footer>
 
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <p class="footer-text">
-                    <span class="footer-copyright">© 2026 REMINGTON WESTBROOK</span>
-                    <span class="footer-separator">×</span>
-                    <span class="footer-tagline">BUILT WITH PASSION & CAFFEINE</span>
-                </p>
-                <div class="footer-tech">
-                    <span class="tech-badge">HTML</span>
-                    <span class="tech-badge">CSS</span>
-                    <span class="tech-badge">JS</span>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <script src="js/main.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>
