@@ -861,7 +861,13 @@ nav {
 .contact-link .link-icon {
   width: 20px;
   height: 20px;
-  filter: brightness(0) saturate(100%) invert(88%) sepia(26%) saturate(1651%) hue-rotate(52deg) brightness(98%) contrast(85%);
+  opacity: 0.9;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.contact-link:hover .link-icon {
+  opacity: 1;
+  transform: scale(1.1);
 }
 .contact-link .link-label {
   font-family: var(--font-tech);
