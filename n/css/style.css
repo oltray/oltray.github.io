@@ -858,11 +858,21 @@ nav {
   transition: background 0.3s;
 }
 .contact-link:hover { background: rgba(255,255,255,0.05); }
+
 .contact-link .link-icon {
   width: 20px;
   height: 20px;
   opacity: 0.9;
   transition: opacity 0.3s, transform 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* For Font Awesome icon */
+.contact-link i.link-icon {
+  font-size: 20px;
+  color: #0077b5; /* LinkedIn blue */
 }
 
 .contact-link:hover .link-icon {
