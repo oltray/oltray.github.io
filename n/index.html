@@ -3,39 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Remington Westbrook — Digital Architect</title>
+  <title>Remington Westbrook — Solutions Engineer</title>
   <link rel="icon" type="image/png" href="images/favicon.png">
-  <meta name="description" content="Remington Westbrook - Solutions Engineer crafting the future">
+  <meta name="description" content="Remington Westbrook — Solutions engineer building privacy-first tools and interactive data visualizations.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Orbitron:wght@400;700;900&family=Source+Code+Pro:wght@300;400;600&family=Playfair+Display:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://cdn.simpleicons.org">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div class="noise"></div>
 
-  <!-- STATUS BAR -->
-  <div class="status-bar">
-    <div class="left">
-      <div class="red-dot"></div>
-      <span>SYS.STATUS: NOMINAL</span>
-      <span class="blink">▋</span>
-    </div>
-    <div class="right-info"><span id="clock">00:00:00</span></div>
-  </div>
-
   <!-- NAV -->
   <nav>
-    <a href="index.html" class="nav-logo">RW</a>
+    <a href="#" class="nav-logo">RW</a>
     <button class="hamburger" onclick="this.classList.toggle('open');document.getElementById('navLinks').classList.toggle('open')" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
     <ul class="nav-links" id="navLinks">
-      <li><a href="index.html" class="active">HOME</a></li>
-      <li><a href="projects.html">PROJECTS</a></li>
-      <li><a href="blog.html">BLOG</a></li>
-      <li><a href="about.html">ABOUT</a></li>
-      <li><a href="contact.html">CONTACT</a></li>
+      <li><a href="#work">WORK</a></li>
+      <li><a href="#about">ABOUT</a></li>
+      <li><a href="#writing">WRITING</a></li>
+      <li><a href="#contact">CONTACT</a></li>
     </ul>
   </nav>
 
@@ -45,51 +35,198 @@
     <div class="deco-lines"></div>
 
     <div class="hero-content">
-      <div class="hero-eyebrow">SYSTEMS ONLINE — 2026</div>
       <h1 class="hero-title">
         REMINGTON
         <span class="outline">WESTBROOK</span>
       </h1>
       <div class="hero-role">
         <span>SOLUTIONS ENGINEER</span>
-        <span class="sep">◆</span>
-        <span>FULL-STACK DEV</span>
       </div>
       <p class="hero-desc">
-        Intentional development
+        I build tools that simplify complex problems.
       </p>
       <div class="hero-buttons">
-        <a href="projects.html" class="btn-primary">VIEW PROJECTS <span>→</span></a>
-        <a href="contact.html" class="btn-ghost">LET'S TALK <span>✦</span></a>
+        <a href="#work" class="btn-primary">VIEW WORK <span>→</span></a>
+        <a href="#contact" class="btn-ghost">GET IN TOUCH <span>✦</span></a>
       </div>
-      <div class="hero-stats">
-        <div class="stat-block">
-          <div class="number">5+</div>
-          <div class="label">LANGUAGES</div>
-        </div>
-        <div class="stat-block">
-          <div class="number">10+</div>
-          <div class="label">PROJECTS</div>
-        </div>
-        <div class="stat-block">
-          <div class="number">∞</div>
-          <div class="label">COFFEE</div>
+    </div>
+  </section>
+
+  <!-- WORK -->
+  <section id="work" class="section-panel">
+    <button class="section-header" aria-expanded="false">
+      <span class="section-header-text">WORK</span>
+      <span class="section-toggle">+</span>
+    </button>
+    <div class="section-body">
+      <div class="section-body-inner">
+        <div class="projects-grid">
+
+          <!-- FinVis -->
+          <div class="project-tile reveal">
+            <h3 class="tile-title">FINVIS</h3>
+            <p class="tile-desc">Privacy-first personal finance visualizer. Interactive charts, cash flow forecasting, what-if scenarios, and pattern detection — 100% in-browser. Zero accounts, zero tracking.</p>
+            <div class="tile-tech">
+              <span>React</span>
+              <span>TypeScript</span>
+              <span>Zustand</span>
+              <span>IndexedDB</span>
+              <span>Recharts</span>
+              <span>Tailwind</span>
+              <span>PWA</span>
+            </div>
+            <div class="tile-footer">
+              <div class="tile-links">
+                <a href="projects/finvis/" target="_blank">OPEN ↗</a>
+                <a href="https://github.com/oltray/financevisualizer" target="_blank">CODE →</a>
+              </div>
+              <div class="tile-arrow">↗</div>
+            </div>
+          </div>
+
+          <!-- Ologiology -->
+          <div class="project-tile reveal">
+            <h3 class="tile-title">OLOGIOLOGY</h3>
+            <p class="tile-desc">Interactive atlas of 628 fields of study visualized as a force-directed knowledge graph. Wikipedia-integrated detail panels, search autocomplete, and shareable URLs.</p>
+            <div class="tile-tech">
+              <span>React</span>
+              <span>D3.js</span>
+              <span>Wikipedia API</span>
+            </div>
+            <div class="tile-footer">
+              <div class="tile-links">
+                <a href="projects/ologiology.html" target="_blank">OPEN ↗</a>
+                <a href="https://github.com/oltray/ologiology" target="_blank">CODE →</a>
+              </div>
+              <div class="tile-arrow">↗</div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
+  </section>
 
-    <div class="hero-side-text">SECTOR 13 — PARADIGM CITY — 2026</div>
+  <!-- ABOUT -->
+  <section id="about" class="section-panel">
+    <button class="section-header" aria-expanded="false">
+      <span class="section-header-text">ABOUT</span>
+      <span class="section-toggle">+</span>
+    </button>
+    <div class="section-body">
+      <div class="section-body-inner">
+
+        <div class="about-bio reveal">
+          <p>Solutions engineer with a BS in Computer Science. I build privacy-first tools, interactive data visualizations, and developer utilities.</p>
+        </div>
+
+        <div class="about-cards">
+          <div class="about-card reveal">
+            <div class="card-label">EDUCATION</div>
+            <h3>BS COMPUTER SCIENCE</h3>
+          </div>
+          <div class="about-card reveal">
+            <div class="card-label">STATUS</div>
+            <h3>OPEN TO OPPORTUNITIES</h3>
+          </div>
+          <div class="about-card reveal">
+            <div class="card-label">LOCATION</div>
+            <h3>REMOTE / US-BASED</h3>
+          </div>
+        </div>
+
+        <div class="skills-section">
+          <div class="skill-group reveal">
+            <div class="skill-group-header">
+              <h3>LANGUAGES</h3>
+            </div>
+            <div class="skill-tags">
+              <span class="skill-tag">JavaScript</span>
+              <span class="skill-tag">Python</span>
+              <span class="skill-tag">Java</span>
+              <span class="skill-tag">C++</span>
+              <span class="skill-tag">SQL</span>
+            </div>
+          </div>
+
+          <div class="skill-group reveal">
+            <div class="skill-group-header">
+              <h3>FRONTEND</h3>
+            </div>
+            <div class="skill-tags">
+              <span class="skill-tag">React</span>
+              <span class="skill-tag">HTML/CSS</span>
+              <span class="skill-tag">Tailwind</span>
+            </div>
+          </div>
+
+          <div class="skill-group reveal">
+            <div class="skill-group-header">
+              <h3>BACKEND</h3>
+            </div>
+            <div class="skill-tags">
+              <span class="skill-tag">Node.js</span>
+              <span class="skill-tag">Express</span>
+              <span class="skill-tag">REST APIs</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- WRITING -->
+  <section id="writing" class="section-panel">
+    <button class="section-header" aria-expanded="false">
+      <span class="section-header-text">WRITING</span>
+      <span class="section-toggle">+</span>
+    </button>
+    <div class="section-body">
+      <div class="section-body-inner">
+        <p class="writing-empty">Nothing published yet.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact" class="section-panel">
+    <button class="section-header" aria-expanded="false">
+      <span class="section-header-text">CONTACT</span>
+      <span class="section-toggle">+</span>
+    </button>
+    <div class="section-body">
+      <div class="section-body-inner">
+        <div class="contact-links">
+          <a href="mailto:oltray@proton.me" class="contact-link">
+            <img src="https://cdn.simpleicons.org/protonmail/6d4aff" alt="ProtonMail" class="link-icon">
+            <span class="link-label">EMAIL</span>
+            <span class="link-value">oltray@proton.me</span>
+            <span class="link-arrow">→</span>
+          </a>
+          <a href="https://github.com/oltray" target="_blank" class="contact-link">
+            <img src="https://cdn.simpleicons.org/github/ffffff" alt="GitHub" class="link-icon">
+            <span class="link-label">GITHUB</span>
+            <span class="link-value">github.com/oltray</span>
+            <span class="link-arrow">→</span>
+          </a>
+          <a href="https://www.linkedin.com/in/remington-westbrook/" target="_blank" class="contact-link">
+            <svg class="link-icon" viewBox="0 0 24 24" fill="#0077b5" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+            </svg>
+            <span class="link-label">LINKEDIN</span>
+            <span class="link-value">Remington Westbrook</span>
+            <span class="link-arrow">→</span>
+          </a>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- FOOTER -->
   <footer>
     <div class="footer-logo">RW</div>
-    <div class="footer-copy">© 2026 REMINGTON WESTBROOK</div>
-    <div class="footer-tech">
-      <span>HTML</span>
-      <span>CSS</span>
-      <span>JS</span>
-    </div>
+    <div class="footer-copy">&copy; 2026 REMINGTON WESTBROOK</div>
   </footer>
 
   <script src="js/main.js"></script>

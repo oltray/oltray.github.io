@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ologiology — A Cartography of Human Curiosity</title>
-<meta name="description" content="An interactive atlas of every -ology: 400+ fields of study mapped as a living constellation of human knowledge.">
+<meta name="description" content="An interactive atlas of 628 fields of study mapped as a force-directed knowledge graph.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -13,17 +13,13 @@
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
   html, body, #root { width: 100%; height: 100%; overflow: hidden; }
-
   body {
     background: #08080c;
     color: #e8dcc8;
     font-family: 'EB Garamond', 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
     -webkit-font-smoothing: antialiased;
   }
-
-  /* noise grain overlay */
   #root::after {
     content: '';
     position: fixed;
@@ -35,14 +31,11 @@
     background-repeat: repeat;
     background-size: 256px 256px;
   }
-
   ::selection { background: rgba(212, 175, 55, 0.3); color: #fff; }
-
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(232, 220, 200, 0.12); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(232, 220, 200, 0.2); }
-
   input::placeholder { color: #5a5248 !important; }
 
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -65,6 +58,20 @@
   @keyframes shimmer {
     0% { background-position: -200% center; }
     100% { background-position: 200% center; }
+  }
+  @keyframes ellipsis {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+  }
+  @keyframes slideUpSheet {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .category-pill {
@@ -119,6 +126,8 @@
     width: calc(100% - 48px);
     z-index: 20;
     animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 70vh;
+    overflow-y: auto;
   }
 
   .panel-glass {
@@ -179,13 +188,214 @@
   }
   .stat-row:last-child { border-bottom: none; }
 
-  @media (max-width: 768px) {
-    .header-bar { padding: 16px 16px 0 !important; }
-    .category-bar { padding: 10px 16px !important; }
-    .detail-panel { width: calc(100% - 24px); padding: 18px 20px 16px; bottom: 12px; }
-    .zoom-controls { bottom: auto !important; top: 70px !important; }
+  /* Search autocomplete */
+  .search-autocomplete {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(10, 10, 16, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 30;
+  }
+  .search-result {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .search-result:hover, .search-result.highlighted {
+    background: rgba(255,255,255,0.06);
+  }
+  .search-result:last-child { border-bottom: none; }
+  .search-result-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .search-result-name {
+    font-size: 13px;
+    color: #e8dcc8;
+    flex-shrink: 0;
+  }
+  .search-result-desc {
+    font-size: 11px;
+    color: #5a5248;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+  .search-match { color: #e8dcc8; font-weight: 600; }
+
+  /* Breadcrumbs */
+  .breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #5a5248;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .breadcrumb-item {
+    cursor: pointer;
+    transition: color 0.15s;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+  }
+  .breadcrumb-item:hover { color: #e8dcc8; }
+  .breadcrumb-sep { margin: 0 2px; }
+
+  /* Nav history buttons */
+  .nav-history-btn {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px;
+    color: #5a5248;
+    width: 26px; height: 26px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s;
+    font-family: 'EB Garamond', serif;
+  }
+  .nav-history-btn:hover:not(:disabled) {
+    border-color: rgba(255,255,255,0.2);
+    color: #e8dcc8;
+  }
+  .nav-history-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
   }
 
+  /* Wiki section */
+  .wiki-section {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .wiki-extract {
+    font-size: 12.5px;
+    color: #8a7e6b;
+    line-height: 1.55;
+    font-style: italic;
+  }
+  .wiki-link {
+    font-size: 11px;
+    color: #6b6054;
+    text-decoration: none;
+    transition: color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+  }
+  .wiki-link:hover { color: #e8dcc8; }
+  .wiki-loading::after {
+    content: '';
+    animation: ellipsis 1.2s infinite;
+  }
+
+  /* Share toast */
+  .share-toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10, 10, 16, 0.92);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 8px 20px;
+    font-size: 12px;
+    color: #e8dcc8;
+    z-index: 100;
+    animation: toastIn 0.3s ease;
+    pointer-events: none;
+  }
+
+  /* Detail panel action links */
+  .detail-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    flex-wrap: wrap;
+  }
+  .detail-action-link {
+    font-size: 11px;
+    color: #6b6054;
+    text-decoration: none;
+    transition: color 0.15s;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: 'EB Garamond', Georgia, serif;
+    padding: 0;
+  }
+  .detail-action-link:hover { color: #e8dcc8; }
+
+  /* Back to portfolio link */
+  .back-link {
+    font-size: 12px;
+    color: #5a5248;
+    text-decoration: none;
+    transition: color 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .back-link:hover { color: #e8dcc8; }
+
+  /* Mobile bottom sheet */
+  @media (max-width: 768px) {
+    .header-bar { padding: 16px 16px 0 !important; }
+    .category-bar {
+      padding: 10px 16px !important;
+      flex-wrap: nowrap !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .category-bar::-webkit-scrollbar { display: none; }
+    .detail-panel {
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      top: auto !important;
+      transform: none !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      height: 60vh;
+      border-radius: 16px 16px 0 0 !important;
+      animation: slideUpSheet 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+      padding-top: 12px !important;
+    }
+    .drag-handle {
+      width: 36px;
+      height: 4px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 2px;
+      margin: 0 auto 12px;
+    }
+    .zoom-controls { bottom: auto !important; top: 70px !important; }
+  }
+  @media (min-width: 769px) {
+    .drag-handle { display: none; }
+  }
   @media (max-width: 480px) {
     .category-pill { font-size: 10px; padding: 3px 9px; }
   }
@@ -197,9 +407,7 @@
 <script type="text/babel">
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
-// ═══════════════════════════════════════════════════════════════
-//  DATA — 400+ ologies, exhaustively compiled and categorized
-// ═══════════════════════════════════════════════════════════════
+const IS_MOBILE = window.innerWidth < 768;
 
 const OLOGIES = [
   // ── LIFE SCIENCES ──────────────────────────────────────────
@@ -300,17 +508,17 @@ const OLOGIES = [
   { id: "spongiology", label: "Spongiology", category: "Zoology", desc: "The study of sponges (phylum Porifera).", parent: "zoology", obscurity: 5 },
 
   // ── PLANT SCIENCES ─────────────────────────────────────────
-  { id: "phytology", label: "Phytology", category: "Plant Sciences", desc: "The study of plants; another name for botany.", parent: "biology", obscurity: 2 },
+  { id: "phytology", label: "Phytology", category: "Plant Sciences", desc: "The study of plants; another name for botany.", parent: "biology", obscurity: 2, wikiTitle: "Botany" },
   { id: "agrostology", label: "Agrostology", category: "Plant Sciences", desc: "The study of grasses.", parent: "phytology", obscurity: 3 },
-  { id: "algology", label: "Algology", category: "Plant Sciences", desc: "The study of algae.", parent: "phytology", obscurity: 2 },
+  { id: "algology", label: "Algology", category: "Plant Sciences", desc: "The study of algae.", parent: "phytology", obscurity: 2, wikiTitle: "Phycology" },
   { id: "bryology", label: "Bryology", category: "Plant Sciences", desc: "The study of mosses, liverworts, and hornworts.", parent: "phytology", obscurity: 3 },
   { id: "carpology", label: "Carpology", category: "Plant Sciences", desc: "The study of fruits and seeds.", parent: "phytology", obscurity: 3 },
   { id: "dendrology", label: "Dendrology", category: "Plant Sciences", desc: "The study of trees and woody plants.", parent: "phytology", obscurity: 2 },
-  { id: "herbology", label: "Herbology", category: "Plant Sciences", desc: "The study of the therapeutic and medicinal use of plants.", parent: "phytology", obscurity: 2 },
+  { id: "herbology", label: "Herbology", category: "Plant Sciences", desc: "The study of the therapeutic and medicinal use of plants.", parent: "phytology", obscurity: 2, wikiTitle: "Herbalism" },
   { id: "lichenology", label: "Lichenology", category: "Plant Sciences", desc: "The study of lichens — symbiotic organisms of fungi and algae.", parent: "phytology", obscurity: 3 },
   { id: "mycology", label: "Mycology", category: "Plant Sciences", desc: "The study of fungi — mushrooms, molds, and yeasts.", parent: "biology", obscurity: 1 },
   { id: "phycology", label: "Phycology", category: "Plant Sciences", desc: "The scientific study of algae (synonym of algology).", parent: "phytology", obscurity: 2 },
-  { id: "phytopathology", label: "Phytopathology", category: "Plant Sciences", desc: "The study of plant diseases caused by pathogens and environmental conditions.", parent: "phytology", obscurity: 2 },
+  { id: "phytopathology", label: "Phytopathology", category: "Plant Sciences", desc: "The study of plant diseases caused by pathogens and environmental conditions.", parent: "phytology", obscurity: 2, wikiTitle: "Plant pathology" },
   { id: "phytosociology", label: "Phytosociology", category: "Plant Sciences", desc: "The study of plant communities and their ecological relationships.", parent: "phytology", obscurity: 3 },
   { id: "pomology", label: "Pomology", category: "Plant Sciences", desc: "The study of fruit cultivation and production.", parent: "phytology", obscurity: 3 },
   { id: "pteridology", label: "Pteridology", category: "Plant Sciences", desc: "The study of ferns and related plants.", parent: "phytology", obscurity: 3 },
@@ -394,16 +602,16 @@ const OLOGIES = [
   { id: "somatology", label: "Somatology", category: "Medical Sciences", desc: "The study of the human body's physical characteristics.", parent: null, obscurity: 3 },
   { id: "sexology", label: "Sexology", category: "Medical Sciences", desc: "The scientific study of human sexuality.", parent: null, obscurity: 2 },
   { id: "somnology", label: "Somnology", category: "Medical Sciences", desc: "The study of sleep and sleep disorders.", parent: null, obscurity: 3 },
-  { id: "aetiology", label: "Aetiology", category: "Medical Sciences", desc: "The study of the causes and origins of disease.", parent: "pathology", obscurity: 2 },
-  { id: "algology_pain", label: "Algology", category: "Medical Sciences", desc: "The study and treatment of pain.", parent: "neurology", obscurity: 3 },
-  { id: "paidology", label: "Paidology", category: "Medical Sciences", desc: "The study of children and child development.", parent: null, obscurity: 3 },
+  { id: "aetiology", label: "Aetiology", category: "Medical Sciences", desc: "The study of the causes and origins of disease.", parent: "pathology", obscurity: 2, wikiTitle: "Etiology" },
+  { id: "algology_pain", label: "Algology", category: "Medical Sciences", desc: "The study and treatment of pain.", parent: "neurology", obscurity: 3, wikiTitle: "Pain management" },
+  { id: "paidology", label: "Paidology", category: "Medical Sciences", desc: "The study of children and child development.", parent: null, obscurity: 3, wikiTitle: "Pedology (children)" },
   { id: "stasiology", label: "Stasiology", category: "Medical Sciences", desc: "The study of political parties and factional conflict.", parent: null, obscurity: 5 },
   { id: "trichopathology", label: "Trichopathology", category: "Medical Sciences", desc: "The study of diseases and disorders of hair.", parent: "dermatology", obscurity: 4 },
   { id: "senology", label: "Senology", category: "Medical Sciences", desc: "The study of breast diseases, particularly breast cancer.", parent: "oncology", obscurity: 3 },
 
   // ── EARTH SCIENCES ─────────────────────────────────────────
   { id: "geology", label: "Geology", category: "Earth Sciences", desc: "The study of the Earth's solid matter, rocks, and the processes that shape them.", parent: null, obscurity: 0 },
-  { id: "astrogeology", label: "Astrogeology", category: "Earth Sciences", desc: "The study of the geology of celestial bodies — planets, moons, asteroids.", parent: "geology", obscurity: 2 },
+  { id: "astrogeology", label: "Astrogeology", category: "Earth Sciences", desc: "The study of the geology of celestial bodies — planets, moons, asteroids.", parent: "geology", obscurity: 2, wikiTitle: "Planetary geology" },
   { id: "climatology", label: "Climatology", category: "Earth Sciences", desc: "The study of long-term climate patterns and atmospheric conditions.", parent: "meteorology", obscurity: 1 },
   { id: "paleoclimatology", label: "Paleoclimatology", category: "Earth Sciences", desc: "The study of climates that existed before instrumental records.", parent: "climatology", obscurity: 2 },
   { id: "edaphology", label: "Edaphology", category: "Earth Sciences", desc: "The study of how soil influences living things, especially plants.", parent: "geology", obscurity: 3 },
@@ -415,9 +623,9 @@ const OLOGIES = [
   { id: "lithology", label: "Lithology", category: "Earth Sciences", desc: "The study of the physical characteristics of rocks.", parent: "geology", obscurity: 2 },
   { id: "meteorology", label: "Meteorology", category: "Earth Sciences", desc: "The study of weather and atmospheric phenomena.", parent: null, obscurity: 0 },
   { id: "mineralogy", label: "Mineralogy", category: "Earth Sciences", desc: "The study of minerals — their chemistry, crystal structure, and properties.", parent: "geology", obscurity: 1 },
-  { id: "oceanology", label: "Oceanology", category: "Earth Sciences", desc: "The study of the oceans and marine systems.", parent: null, obscurity: 1 },
-  { id: "orology", label: "Orology", category: "Earth Sciences", desc: "The study of mountains and mountain formation.", parent: "geology", obscurity: 3 },
-  { id: "pedology", label: "Pedology", category: "Earth Sciences", desc: "The study of soils in their natural environment.", parent: "geology", obscurity: 2 },
+  { id: "oceanology", label: "Oceanology", category: "Earth Sciences", desc: "The study of the oceans and marine systems.", parent: null, obscurity: 1, wikiTitle: "Oceanography" },
+  { id: "orology", label: "Orology", category: "Earth Sciences", desc: "The study of mountains and mountain formation.", parent: "geology", obscurity: 3, wikiTitle: "Orography" },
+  { id: "pedology", label: "Pedology", category: "Earth Sciences", desc: "The study of soils in their natural environment.", parent: "geology", obscurity: 2, wikiTitle: "Pedology (soil study)" },
   { id: "petrology", label: "Petrology", category: "Earth Sciences", desc: "The study of rocks — their origin, composition, and structure.", parent: "geology", obscurity: 2 },
   { id: "potamology", label: "Potamology", category: "Earth Sciences", desc: "The study of rivers and river systems.", parent: "hydrology", obscurity: 3 },
   { id: "sedimentology", label: "Sedimentology", category: "Earth Sciences", desc: "The study of sedimentary deposits and the processes that form them.", parent: "geology", obscurity: 2 },
@@ -437,7 +645,7 @@ const OLOGIES = [
 
   // ── SPACE SCIENCES ─────────────────────────────────────────
   { id: "cosmology", label: "Cosmology", category: "Space Sciences", desc: "The study of the origin, evolution, and large-scale structure of the universe.", parent: null, obscurity: 0 },
-  { id: "planetology", label: "Planetology", category: "Space Sciences", desc: "The study of planets and planetary systems.", parent: "cosmology", obscurity: 1 },
+  { id: "planetology", label: "Planetology", category: "Space Sciences", desc: "The study of planets and planetary systems.", parent: "cosmology", obscurity: 1, wikiTitle: "Planetary science" },
   { id: "selenology", label: "Selenology", category: "Space Sciences", desc: "The study of the Moon — its geology, surface, and origin.", parent: "planetology", obscurity: 3 },
   { id: "areology", label: "Areology", category: "Space Sciences", desc: "The study of Mars.", parent: "planetology", obscurity: 4 },
   { id: "heliology", label: "Heliology", category: "Space Sciences", desc: "The study of the Sun.", parent: "cosmology", obscurity: 3 },
@@ -455,7 +663,7 @@ const OLOGIES = [
   { id: "ethnology", label: "Ethnology", category: "Social Sciences", desc: "The comparative and analytical study of cultures.", parent: "anthropology", obscurity: 2 },
   { id: "psychology", label: "Psychology", category: "Social Sciences", desc: "The study of mind, behavior, and mental processes.", parent: null, obscurity: 0 },
   { id: "parapsychology", label: "Parapsychology", category: "Social Sciences", desc: "The study of claimed paranormal phenomena — telepathy, precognition, and the like.", parent: "psychology", obscurity: 2 },
-  { id: "psychobiology", label: "Psychobiology", category: "Social Sciences", desc: "The study of biology as it relates to behavior and mental processes.", parent: "psychology", obscurity: 2 },
+  { id: "psychobiology", label: "Psychobiology", category: "Social Sciences", desc: "The study of biology as it relates to behavior and mental processes.", parent: "psychology", obscurity: 2, wikiTitle: "Behavioral neuroscience" },
   { id: "sociology", label: "Sociology", category: "Social Sciences", desc: "The study of human society, social institutions, and social relationships.", parent: null, obscurity: 0 },
   { id: "agriology", label: "Agriology", category: "Social Sciences", desc: "The study of the customs and practices of non-literate peoples.", parent: "anthropology", obscurity: 4 },
   { id: "kremlinology", label: "Kremlinology", category: "Social Sciences", desc: "The study of the politics and practices of secretive governments.", parent: "sociology", obscurity: 3 },
@@ -473,7 +681,7 @@ const OLOGIES = [
   { id: "ontology", label: "Ontology", category: "Humanities", desc: "The study of being, existence, and the nature of reality.", parent: null, obscurity: 1 },
   { id: "phenomenology", label: "Phenomenology", category: "Humanities", desc: "The study of the structures of conscious experience.", parent: "ontology", obscurity: 2 },
   { id: "axiology", label: "Axiology", category: "Humanities", desc: "The study of values and value judgments.", parent: null, obscurity: 3 },
-  { id: "deontology", label: "Deontology", category: "Humanities", desc: "The ethics of duty — judging actions by adherence to moral rules.", parent: "axiology", obscurity: 2 },
+  { id: "deontology", label: "Deontology", category: "Humanities", desc: "The ethics of duty — judging actions by adherence to moral rules.", parent: "axiology", obscurity: 2, wikiTitle: "Deontological ethics" },
   { id: "theology", label: "Theology", category: "Humanities", desc: "The study of the divine, religious belief, and the nature of God.", parent: null, obscurity: 0 },
   { id: "angelology", label: "Angelology", category: "Humanities", desc: "The theological study of angels.", parent: "theology", obscurity: 3 },
   { id: "demonology", label: "Demonology", category: "Humanities", desc: "The study of demons, evil spirits, and their hierarchies.", parent: "theology", obscurity: 2 },
@@ -488,7 +696,7 @@ const OLOGIES = [
   { id: "grammatology", label: "Grammatology", category: "Humanities", desc: "The study of writing systems and the science of scripts.", parent: "philology", obscurity: 3 },
   { id: "graphology", label: "Graphology", category: "Humanities", desc: "The study (and claimed analysis) of handwriting.", parent: "philology", obscurity: 2 },
   { id: "lexicology", label: "Lexicology", category: "Humanities", desc: "The study of the form, meaning, and behavior of words.", parent: "philology", obscurity: 2 },
-  { id: "semiology", label: "Semiology", category: "Humanities", desc: "The study of signs, symbols, and systems of signification.", parent: null, obscurity: 2 },
+  { id: "semiology", label: "Semiology", category: "Humanities", desc: "The study of signs, symbols, and systems of signification.", parent: null, obscurity: 2, wikiTitle: "Semiotics" },
   { id: "iconology", label: "Iconology", category: "Humanities", desc: "The study of visual imagery, symbolism, and allegory in art.", parent: "semiology", obscurity: 3 },
   { id: "ideology", label: "Ideology", category: "Humanities", desc: "The study and analysis of systems of ideas and ideals.", parent: null, obscurity: 1 },
   { id: "sinology", label: "Sinology", category: "Humanities", desc: "The academic study of China — its language, history, and culture.", parent: null, obscurity: 2 },
@@ -513,9 +721,9 @@ const OLOGIES = [
   { id: "pneumatology", label: "Pneumatology", category: "Humanities", desc: "The theological study of the Holy Spirit, or the study of spirits in general.", parent: "theology", obscurity: 3 },
   { id: "coptology", label: "Coptology", category: "Humanities", desc: "The study of Coptic civilization, language, and art.", parent: null, obscurity: 4 },
   { id: "indology", label: "Indology", category: "Humanities", desc: "The academic study of Indian history, languages, and cultures.", parent: null, obscurity: 2 },
-  { id: "japanology", label: "Japanology", category: "Humanities", desc: "The academic study of Japan — its culture, history, and language.", parent: null, obscurity: 2 },
-  { id: "neology", label: "Neology", category: "Humanities", desc: "The study of new words and how they enter a language.", parent: "philology", obscurity: 3 },
-  { id: "glottology", label: "Glottology", category: "Humanities", desc: "An older term for the study of language and linguistics.", parent: "philology", obscurity: 4 },
+  { id: "japanology", label: "Japanology", category: "Humanities", desc: "The academic study of Japan — its culture, history, and language.", parent: null, obscurity: 2, wikiTitle: "Japanology" },
+  { id: "neology", label: "Neology", category: "Humanities", desc: "The study of new words and how they enter a language.", parent: "philology", obscurity: 3, wikiTitle: "Neologism" },
+  { id: "glottology", label: "Glottology", category: "Humanities", desc: "An older term for the study of language and linguistics.", parent: "philology", obscurity: 4, wikiTitle: "Linguistics" },
   { id: "stichology", label: "Stichology", category: "Humanities", desc: "The study of lines of verse and their arrangement.", parent: null, obscurity: 5 },
 
   // ── PHYSICAL SCIENCES ──────────────────────────────────────
@@ -534,7 +742,7 @@ const OLOGIES = [
   { id: "kymatology", label: "Kymatology", category: "Physical Sciences", desc: "The study of waves and wave motion.", parent: null, obscurity: 4 },
   { id: "anemology", label: "Anemology", category: "Physical Sciences", desc: "The study of wind.", parent: "meteorology", obscurity: 4 },
   { id: "photology", label: "Photology", category: "Physical Sciences", desc: "The study of light and optics.", parent: null, obscurity: 4 },
-  { id: "acousticology", label: "Acousticology", category: "Physical Sciences", desc: "The study of sound and acoustics.", parent: null, obscurity: 3 },
+  { id: "acousticology", label: "Acousticology", category: "Physical Sciences", desc: "The study of sound and acoustics.", parent: null, obscurity: 3, wikiTitle: "Acoustics" },
   { id: "cryogenology", label: "Cryogenology", category: "Physical Sciences", desc: "The study of the production and effects of very low temperatures.", parent: "cryology", obscurity: 4 },
 
   // ── INFORMATION SCIENCES ───────────────────────────────────
@@ -543,7 +751,7 @@ const OLOGIES = [
   { id: "typology", label: "Typology", category: "Information Sciences", desc: "The study and interpretation of types and systems of classification.", parent: null, obscurity: 2 },
   { id: "symbology", label: "Symbology", category: "Information Sciences", desc: "The study and interpretation of symbols.", parent: null, obscurity: 2 },
   { id: "bibliology", label: "Bibliology", category: "Information Sciences", desc: "The study of books — their history, production, and classification.", parent: null, obscurity: 3 },
-  { id: "archivology", label: "Archivology", category: "Information Sciences", desc: "The study of archives, their management and preservation.", parent: null, obscurity: 3 },
+  { id: "archivology", label: "Archivology", category: "Information Sciences", desc: "The study of archives, their management and preservation.", parent: null, obscurity: 3, wikiTitle: "Archival science" },
   { id: "documentology", label: "Documentology", category: "Information Sciences", desc: "The study of documents and documentation systems.", parent: null, obscurity: 4 },
 
   // ── CURIOSITIES ────────────────────────────────────────────
@@ -563,8 +771,8 @@ const OLOGIES = [
   { id: "dactylology", label: "Dactylology", category: "Curiosities", desc: "The study of communicating with the fingers, especially sign language.", parent: null, obscurity: 5 },
   { id: "ponerology", label: "Ponerology", category: "Curiosities", desc: "The study of evil and its origins.", parent: null, obscurity: 4 },
   { id: "enigmatology", label: "Enigmatology", category: "Curiosities", desc: "The study of puzzles and puzzle-making.", parent: null, obscurity: 3 },
-  { id: "zymology", label: "Zymology", category: "Curiosities", desc: "The study of fermentation and its biochemical processes.", parent: null, obscurity: 3 },
-  { id: "futurology", label: "Futurology", category: "Curiosities", desc: "The study of future possibilities, scenarios, and trends.", parent: null, obscurity: 2 },
+  { id: "zymology", label: "Zymology", category: "Curiosities", desc: "The study of fermentation and its biochemical processes.", parent: null, obscurity: 3, wikiTitle: "Zymology" },
+  { id: "futurology", label: "Futurology", category: "Curiosities", desc: "The study of future possibilities, scenarios, and trends.", parent: null, obscurity: 2, wikiTitle: "Futures studies" },
   { id: "reflexology", label: "Reflexology", category: "Curiosities", desc: "The study of reflex responses, or the alternative therapy based on pressure points.", parent: null, obscurity: 2 },
   { id: "garbology", label: "Garbology", category: "Curiosities", desc: "The study of modern refuse and waste as a means of understanding society.", parent: null, obscurity: 4 },
   { id: "latrinology", label: "Latrinology", category: "Curiosities", desc: "The study of inscriptions and graffiti found on restroom walls.", parent: null, obscurity: 5 },
@@ -581,33 +789,33 @@ const OLOGIES = [
   { id: "iridology", label: "Iridology", category: "Curiosities", desc: "The alternative practice of diagnosing illness by examining the iris.", parent: null, obscurity: 3 },
   { id: "aristology", label: "Aristology", category: "Curiosities", desc: "The art and science of fine dining.", parent: null, obscurity: 5 },
   { id: "cereology", label: "Cereology", category: "Curiosities", desc: "The study of crop circles.", parent: null, obscurity: 4 },
-  { id: "timbrology", label: "Timbrology", category: "Curiosities", desc: "The study of postage stamps — another name for philately.", parent: null, obscurity: 4 },
+  { id: "timbrology", label: "Timbrology", category: "Curiosities", desc: "The study of postage stamps — another name for philately.", parent: null, obscurity: 4, wikiTitle: "Philately" },
   { id: "tegestology", label: "Tegestology", category: "Curiosities", desc: "The collecting of beer mats and coasters.", parent: null, obscurity: 5 },
   { id: "nostology", label: "Nostology", category: "Curiosities", desc: "The study of senility and the return to childlike states in old age.", parent: null, obscurity: 5 },
-  { id: "oikology", label: "Oikology", category: "Curiosities", desc: "The science of housekeeping.", parent: null, obscurity: 5 },
+  { id: "oikology", label: "Oikology", category: "Curiosities", desc: "The science of housekeeping.", parent: null, obscurity: 5, wikiTitle: "Home economics" },
   { id: "sitiology", label: "Sitiology", category: "Curiosities", desc: "The study of food, diet, and nutrition.", parent: null, obscurity: 4 },
-  { id: "aerolithology", label: "Aerolithology", category: "Curiosities", desc: "The study of meteorites.", parent: null, obscurity: 5 },
-  { id: "olfactology", label: "Olfactology", category: "Curiosities", desc: "The study of the sense of smell.", parent: null, obscurity: 4 },
+  { id: "aerolithology", label: "Aerolithology", category: "Curiosities", desc: "The study of meteorites.", parent: null, obscurity: 5, wikiTitle: "Meteorite" },
+  { id: "olfactology", label: "Olfactology", category: "Curiosities", desc: "The study of the sense of smell.", parent: null, obscurity: 4, wikiTitle: "Olfaction" },
   { id: "kidology", label: "Kidology", category: "Curiosities", desc: "The art of deception and bluffing.", parent: null, obscurity: 5 },
-  { id: "chaology", label: "Chaology", category: "Curiosities", desc: "The study of chaos and chaos theory.", parent: null, obscurity: 3 },
+  { id: "chaology", label: "Chaology", category: "Curiosities", desc: "The study of chaos and chaos theory.", parent: null, obscurity: 3, wikiTitle: "Chaos theory" },
   { id: "siderology", label: "Siderology", category: "Curiosities", desc: "The study of iron and the properties of meteoritic iron.", parent: null, obscurity: 5 },
-  { id: "hippocratology", label: "Hippocratology", category: "Curiosities", desc: "The study of the life and writings of Hippocrates.", parent: null, obscurity: 5 },
+  { id: "hippocratology", label: "Hippocratology", category: "Curiosities", desc: "The study of the life and writings of Hippocrates.", parent: null, obscurity: 5, wikiTitle: "Hippocrates" },
   { id: "cosmetology", label: "Cosmetology", category: "Curiosities", desc: "The study and practice of beauty treatments.", parent: null, obscurity: 1 },
   { id: "escapology", label: "Escapology", category: "Curiosities", desc: "The art and practice of escaping from physical restraints.", parent: null, obscurity: 2 },
   { id: "taphology", label: "Taphology", category: "Curiosities", desc: "The study of funerary customs and burial practices.", parent: null, obscurity: 4 },
   { id: "spermology", label: "Spermology", category: "Curiosities", desc: "The study of seeds — or, colloquially, the gathering of trivial facts.", parent: null, obscurity: 5 },
-  { id: "pestology", label: "Pestology", category: "Curiosities", desc: "The study of pests and pest control.", parent: null, obscurity: 4 },
+  { id: "pestology", label: "Pestology", category: "Curiosities", desc: "The study of pests and pest control.", parent: null, obscurity: 4, wikiTitle: "Pest control" },
   { id: "dosiology", label: "Dosiology", category: "Curiosities", desc: "The study of appropriate doses and dosing regimens.", parent: null, obscurity: 5 },
-  { id: "organology_music", label: "Organology", category: "Curiosities", desc: "The study of musical instruments — their classification and history.", parent: null, obscurity: 3 },
-  { id: "storiology", label: "Storiology", category: "Curiosities", desc: "The study of folklore and traditional stories.", parent: null, obscurity: 5 },
+  { id: "organology_music", label: "Organology", category: "Curiosities", desc: "The study of musical instruments — their classification and history.", parent: null, obscurity: 3, wikiTitle: "Organology" },
+  { id: "storiology", label: "Storiology", category: "Curiosities", desc: "The study of folklore and traditional stories.", parent: null, obscurity: 5, wikiTitle: "Folklore" },
   { id: "osmology", label: "Osmology", category: "Curiosities", desc: "The study of odors and the sense of smell.", parent: null, obscurity: 4 },
   { id: "menology", label: "Menology", category: "Curiosities", desc: "The study of church calendars and religious commemorations.", parent: null, obscurity: 5 },
   { id: "dystychiology", label: "Dystychiology", category: "Curiosities", desc: "The study of accidents and disasters.", parent: null, obscurity: 5 },
   { id: "astrometeorology", label: "Astrometeorology", category: "Curiosities", desc: "The study of the supposed effects of celestial bodies on weather.", parent: null, obscurity: 5 },
-  { id: "pyroballogy", label: "Pyroballogy", category: "Curiosities", desc: "The study of artillery and ballistics.", parent: null, obscurity: 5 },
+  { id: "pyroballogy", label: "Pyroballogy", category: "Curiosities", desc: "The study of artillery and ballistics.", parent: null, obscurity: 5, wikiTitle: "Ballistics" },
   { id: "hippocrepiology", label: "Hippocrepiology", category: "Curiosities", desc: "The habit of speaking authoritatively on topics one knows nothing about.", parent: null, obscurity: 5 },
-  { id: "necrolog", label: "Necrology", category: "Curiosities", desc: "The study or recording of death notices and obituaries.", parent: null, obscurity: 4 },
-  { id: "lalopathology", label: "Lalopathology", category: "Curiosities", desc: "The study of speech disorders.", parent: null, obscurity: 5 },
+  { id: "necrolog", label: "Necrology", category: "Curiosities", desc: "The study or recording of death notices and obituaries.", parent: null, obscurity: 4, wikiTitle: "Necrology" },
+  { id: "lalopathology", label: "Lalopathology", category: "Curiosities", desc: "The study of speech disorders.", parent: null, obscurity: 5, wikiTitle: "Speech-language pathology" },
   { id: "arctology", label: "Arctology", category: "Curiosities", desc: "The study of bears.", parent: null, obscurity: 5 },
   { id: "potteriology", label: "Potteriology", category: "Curiosities", desc: "The study of the Harry Potter universe — a modern fan-coined discipline.", parent: null, obscurity: 5 },
   { id: "noctology", label: "Noctology", category: "Curiosities", desc: "The study of the night and nocturnal phenomena.", parent: null, obscurity: 5 },
@@ -616,15 +824,15 @@ const OLOGIES = [
   { id: "atmology", label: "Atmology", category: "Curiosities", desc: "The study of aqueous vapor and evaporation.", parent: null, obscurity: 5 },
   { id: "caliology", label: "Caliology", category: "Curiosities", desc: "The study of bird nests and nest construction.", parent: null, obscurity: 5 },
   { id: "carpology_cur", label: "Chrematology", category: "Curiosities", desc: "The study of money and wealth.", parent: null, obscurity: 4 },
-  { id: "glottogony", label: "Glottogony", category: "Curiosities", desc: "The study of the origin of language.", parent: null, obscurity: 5 },
+  { id: "glottogony", label: "Glottogony", category: "Curiosities", desc: "The study of the origin of language.", parent: null, obscurity: 5, wikiTitle: "Origin of language" },
   { id: "gynaecology_hist", label: "Genealogy", category: "Curiosities", desc: "The study of family histories and lines of descent.", parent: null, obscurity: 1 },
   { id: "henology", label: "Henology", category: "Curiosities", desc: "The study of 'The One' — unity and the fundamental principle of reality.", parent: null, obscurity: 5 },
   { id: "hyetology", label: "Hyetology", category: "Curiosities", desc: "The study of rainfall and precipitation.", parent: null, obscurity: 5 },
-  { id: "insectology", label: "Insectology", category: "Curiosities", desc: "An older, informal term for the study of insects.", parent: "entomology", obscurity: 4 },
+  { id: "insectology", label: "Insectology", category: "Curiosities", desc: "An older, informal term for the study of insects.", parent: "entomology", obscurity: 4, wikiTitle: "Entomology" },
   { id: "pterygology", label: "Pterygology", category: "Curiosities", desc: "The study of fins and wing-like structures.", parent: null, obscurity: 5 },
   { id: "runology", label: "Runology", category: "Curiosities", desc: "The study of runic alphabets and inscriptions.", parent: null, obscurity: 3 },
   { id: "spectrology", label: "Spectrology", category: "Curiosities", desc: "The study of ghosts and apparitions.", parent: null, obscurity: 4 },
-  { id: "stratology", label: "Stratology", category: "Curiosities", desc: "The study of armies and military strategy.", parent: null, obscurity: 4 },
+  { id: "stratology", label: "Stratology", category: "Curiosities", desc: "The study of armies and military strategy.", parent: null, obscurity: 4, wikiTitle: "Military strategy" },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -647,9 +855,11 @@ const CATEGORY_COLORS = {
 };
 
 const CATEGORIES = Object.keys(CATEGORY_COLORS);
+const OLOGY_MAP = new Map(OLOGIES.map(o => [o.id, o]));
 
 function getRadius(d) {
-  return Math.max(3.5, 13 - d.obscurity * 1.8);
+  const min = IS_MOBILE ? 8 : 3.5;
+  return Math.max(min, 13 - d.obscurity * 1.8);
 }
 
 function obscurityLabel(n) {
@@ -666,6 +876,65 @@ function obscurityStars(n) {
   return "●".repeat(filled) + "○".repeat(5 - filled);
 }
 
+// Build ancestry chain for breadcrumbs
+function getAncestry(node) {
+  const chain = [];
+  let current = node;
+  while (current && current.parent) {
+    const parent = OLOGY_MAP.get(current.parent);
+    if (parent) {
+      chain.unshift(parent);
+      current = parent;
+    } else break;
+  }
+  return chain;
+}
+
+// Get related fields (same category, similar obscurity)
+function getRelated(node, count = 5) {
+  return OLOGIES
+    .filter(o => o.id !== node.id && o.category === node.category && Math.abs(o.obscurity - node.obscurity) <= 1)
+    .sort(() => Math.random() - 0.5)
+    .slice(0, count);
+}
+
+// Wikipedia cache
+const wikiCache = new Map();
+
+async function fetchWikiSummary(node) {
+  const title = node.wikiTitle || node.label;
+  if (wikiCache.has(title)) return wikiCache.get(title);
+  try {
+    const resp = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+    if (!resp.ok) { wikiCache.set(title, null); return null; }
+    const data = await resp.json();
+    if (data.type === "disambiguation" || !data.extract) { wikiCache.set(title, null); return null; }
+    const sentences = data.extract.split('. ').slice(0, 3).join('. ');
+    const result = {
+      extract: sentences.endsWith('.') ? sentences : sentences + '.',
+      url: data.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`,
+    };
+    wikiCache.set(title, result);
+    return result;
+  } catch {
+    wikiCache.set(title, null);
+    return null;
+  }
+}
+
+// Get ology from URL param
+function getOlogyParam() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('ology');
+}
+
+// Pick today's discovery (deterministic per day)
+function getTodaysDiscovery() {
+  const obscure = OLOGIES.filter(o => o.obscurity >= 3);
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  return obscure[dayOfYear % obscure.length];
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
@@ -675,13 +944,29 @@ function Ologiology() {
   const containerRef = useRef(null);
   const simulationRef = useRef(null);
   const zoomRef = useRef(null);
+  const nodeDataRef = useRef(null);
   const [selected, setSelected] = useState(null);
   const [activeCategories, setActiveCategories] = useState(new Set(CATEGORIES));
   const [searchTerm, setSearchTerm] = useState("");
   const [dimensions, setDimensions] = useState({ width: 900, height: 700 });
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(!getOlogyParam());
   const [showAbout, setShowAbout] = useState(false);
   const [graphReady, setGraphReady] = useState(false);
+  const [wikiData, setWikiData] = useState(null);
+  const [wikiLoading, setWikiLoading] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [todaysDiscovery] = useState(() => getTodaysDiscovery());
+  const [todaysWiki, setTodaysWiki] = useState(null);
+
+  // Navigation history
+  const [navHistory, setNavHistory] = useState([]);
+  const [navIndex, setNavIndex] = useState(-1);
+  const isNavAction = useRef(false);
+
+  // Search autocomplete
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const searchRef = useRef(null);
 
   // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -689,6 +974,70 @@ function Ologiology() {
     const timer = setTimeout(() => setDebouncedSearch(searchTerm), 180);
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Pre-fetch today's discovery wiki
+  useEffect(() => {
+    fetchWikiSummary(todaysDiscovery).then(setTodaysWiki);
+  }, []);
+
+  // Handle URL param on mount
+  useEffect(() => {
+    const paramId = getOlogyParam();
+    if (paramId) {
+      const node = OLOGY_MAP.get(paramId);
+      if (node) {
+        setSelected(node);
+        setNavHistory([node]);
+        setNavIndex(0);
+      }
+    }
+  }, []);
+
+  // Fetch wiki on selection change
+  useEffect(() => {
+    if (!selected) { setWikiData(null); return; }
+    setWikiLoading(true);
+    setWikiData(null);
+    fetchWikiSummary(selected).then(data => {
+      setWikiData(data);
+      setWikiLoading(false);
+    });
+  }, [selected?.id]);
+
+  // Navigate to a node (with history tracking)
+  const navigateTo = useCallback((node) => {
+    if (isNavAction.current) {
+      isNavAction.current = false;
+      setSelected(node);
+      return;
+    }
+    setSelected(node);
+    setNavHistory(prev => {
+      const newHistory = prev.slice(0, navIndex + 1);
+      newHistory.push(node);
+      return newHistory;
+    });
+    setNavIndex(prev => prev + 1);
+  }, [navIndex]);
+
+  const canGoBack = navIndex > 0;
+  const canGoForward = navIndex < navHistory.length - 1;
+
+  const goBack = useCallback(() => {
+    if (!canGoBack) return;
+    isNavAction.current = true;
+    const newIdx = navIndex - 1;
+    setNavIndex(newIdx);
+    setSelected(navHistory[newIdx]);
+  }, [navIndex, navHistory, canGoBack]);
+
+  const goForward = useCallback(() => {
+    if (!canGoForward) return;
+    isNavAction.current = true;
+    const newIdx = navIndex + 1;
+    setNavIndex(newIdx);
+    setSelected(navHistory[newIdx]);
+  }, [navIndex, navHistory, canGoForward]);
 
   const filteredNodes = useMemo(() =>
     OLOGIES.filter(n =>
@@ -718,6 +1067,15 @@ function Ologiology() {
     );
   }, [debouncedSearch]);
 
+  // Autocomplete results
+  const autocompleteResults = useMemo(() => {
+    if (!searchTerm || searchTerm.length < 1) return [];
+    const term = searchTerm.toLowerCase();
+    return OLOGIES
+      .filter(n => n.label.toLowerCase().includes(term) || n.desc.toLowerCase().includes(term))
+      .slice(0, 12);
+  }, [searchTerm]);
+
   // Resize observer
   useEffect(() => {
     const update = () => {
@@ -731,6 +1089,29 @@ function Ologiology() {
     return () => window.removeEventListener("resize", update);
   }, []);
 
+  // Zoom to node function
+  const zoomToNode = useCallback((nodeId) => {
+    if (!svgRef.current || !zoomRef.current || !nodeDataRef.current) return;
+    const nodeData = nodeDataRef.current.find(n => n.id === nodeId);
+    if (!nodeData || nodeData.x == null) return;
+    const svg = d3.select(svgRef.current);
+    const { width, height } = dimensions;
+    const scale = IS_MOBILE ? 2.0 : 1.5;
+    const tx = width / 2 - nodeData.x * scale;
+    const ty = height / 2 - nodeData.y * scale;
+    svg.transition().duration(600).ease(d3.easeCubicOut).call(
+      zoomRef.current.transform,
+      d3.zoomIdentity.translate(tx, ty).scale(scale)
+    );
+  }, [dimensions]);
+
+  // Zoom to node on selection
+  useEffect(() => {
+    if (selected && graphReady) {
+      setTimeout(() => zoomToNode(selected.id), 50);
+    }
+  }, [selected?.id, graphReady, zoomToNode]);
+
   // D3 simulation
   useEffect(() => {
     if (!svgRef.current || showIntro) return;
@@ -739,15 +1120,12 @@ function Ologiology() {
     svg.selectAll("*").remove();
 
     const defs = svg.append("defs");
-
-    // Glow filter
     const filter = defs.append("filter").attr("id", "glow").attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
     filter.append("feGaussianBlur").attr("stdDeviation", "2.5").attr("result", "coloredBlur");
     const feMerge = filter.append("feMerge");
     feMerge.append("feMergeNode").attr("in", "coloredBlur");
     feMerge.append("feMergeNode").attr("in", "SourceGraphic");
 
-    // Soft glow for selected
     const selFilter = defs.append("filter").attr("id", "selGlow").attr("x", "-100%").attr("y", "-100%").attr("width", "300%").attr("height", "300%");
     selFilter.append("feGaussianBlur").attr("stdDeviation", "5").attr("result", "blur");
     const selMerge = selFilter.append("feMerge");
@@ -763,6 +1141,7 @@ function Ologiology() {
     zoomRef.current = zoom;
 
     const nodes = filteredNodes.map(d => ({ ...d }));
+    nodeDataRef.current = nodes;
     const nodeMap = new Map(nodes.map(n => [n.id, n]));
     const edgeData = links.filter(l => nodeMap.has(l.source) && nodeMap.has(l.target))
       .map(l => ({ source: l.source, target: l.target }));
@@ -777,7 +1156,6 @@ function Ologiology() {
 
     simulationRef.current = simulation;
 
-    // Links
     const link = g.append("g").attr("class", "links").selectAll("line").data(edgeData).join("line")
       .attr("stroke", d => {
         const src = typeof d.source === "object" ? d.source : nodeMap.get(d.source);
@@ -785,16 +1163,31 @@ function Ologiology() {
       })
       .attr("stroke-width", 0.7);
 
-    // Node groups
+    // Touch drag tracking
+    let dragStart = null;
+    let dragged = false;
+
     const node = g.append("g").attr("class", "nodes").selectAll("g").data(nodes).join("g")
       .attr("cursor", "pointer")
       .call(d3.drag()
-        .on("start", (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
-        .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
-        .on("end", (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+        .on("start", (e, d) => {
+          dragStart = { x: e.x, y: e.y };
+          dragged = false;
+          if (!e.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x; d.fy = d.y;
+        })
+        .on("drag", (e, d) => {
+          const dx = e.x - dragStart.x;
+          const dy = e.y - dragStart.y;
+          if (Math.sqrt(dx*dx + dy*dy) > 5) dragged = true;
+          d.fx = e.x; d.fy = e.y;
+        })
+        .on("end", (e, d) => {
+          if (!e.active) simulation.alphaTarget(0);
+          d.fx = null; d.fy = null;
+        })
       );
 
-    // Outer halo
     node.append("circle")
       .attr("r", d => getRadius(d) + 3)
       .attr("fill", "none")
@@ -802,7 +1195,6 @@ function Ologiology() {
       .attr("stroke-width", 0.3)
       .attr("opacity", 0.2);
 
-    // Main circle
     node.append("circle")
       .attr("class", "main-circle")
       .attr("r", d => getRadius(d))
@@ -814,7 +1206,6 @@ function Ologiology() {
       .attr("stroke-width", d => debouncedSearch && searchMatchIds.has(d.id) ? 2.5 : 1.1)
       .attr("filter", "url(#glow)");
 
-    // Labels
     node.append("text")
       .text(d => d.label)
       .attr("text-anchor", "middle")
@@ -829,11 +1220,12 @@ function Ologiology() {
       .attr("pointer-events", "none")
       .attr("opacity", d => d.obscurity <= 3 ? 1 : 0.7);
 
-    // Interactions
-    node.on("click", (e, d) => { e.stopPropagation(); setSelected(d); });
+    node.on("click", (e, d) => {
+      e.stopPropagation();
+      if (!dragged) navigateTo(d);
+    });
     svg.on("click", () => setSelected(null));
 
-    // Hover highlighting
     const updateHover = (hovId) => {
       if (hovId) {
         const connected = new Set([hovId]);
@@ -868,14 +1260,24 @@ function Ologiology() {
       node.attr("transform", d => `translate(${d.x},${d.y})`);
     });
 
-    // Initial zoom to fit
     setTimeout(() => {
-      const scale = Math.min(0.8, Math.min(width, height) / 1100);
+      const scale = IS_MOBILE
+        ? Math.min(1.2, Math.min(width, height) / 800)
+        : Math.min(0.8, Math.min(width, height) / 1100);
       svg.transition().duration(1200).ease(d3.easeCubicOut).call(
         zoom.transform,
         d3.zoomIdentity.translate(width * (1 - scale) / 2, height * (1 - scale) / 2).scale(scale)
       );
       setGraphReady(true);
+
+      // Auto-select from URL param after graph is ready
+      const paramId = getOlogyParam();
+      if (paramId) {
+        const paramNode = OLOGY_MAP.get(paramId);
+        if (paramNode) {
+          setTimeout(() => zoomToNode(paramId), 800);
+        }
+      }
     }, 400);
 
     return () => simulation.stop();
@@ -892,14 +1294,15 @@ function Ologiology() {
     if (!svgRef.current || !zoomRef.current) return;
     const svg = d3.select(svgRef.current);
     const { width, height } = dimensions;
-    const scale = Math.min(0.8, Math.min(width, height) / 1100);
+    const scale = IS_MOBILE
+      ? Math.min(1.2, Math.min(width, height) / 800)
+      : Math.min(0.8, Math.min(width, height) / 1100);
     svg.transition().duration(600).ease(d3.easeCubicOut).call(
       zoomRef.current.transform,
       d3.zoomIdentity.translate(width * (1 - scale) / 2, height * (1 - scale) / 2).scale(scale)
     );
   }, [dimensions]);
 
-  // Category toggle
   function toggleCategory(cat) {
     setActiveCategories(prev => {
       const next = new Set(prev);
@@ -916,17 +1319,61 @@ function Ologiology() {
     });
   }
 
-  // Random ology
   function pickRandom() {
     const pool = filteredNodes.length > 0 ? filteredNodes : OLOGIES;
     const pick = pool[Math.floor(Math.random() * pool.length)];
-    setSelected(pick);
+    navigateTo(pick);
+  }
+
+  function shareUrl() {
+    if (!selected) return;
+    const url = `${window.location.origin}${window.location.pathname}?ology=${selected.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
+    });
+  }
+
+  function selectAutocomplete(node) {
+    navigateTo(node);
+    setSearchTerm("");
+    setShowAutocomplete(false);
+    setHighlightedIndex(-1);
+  }
+
+  function handleSearchKeyDown(e) {
+    if (!showAutocomplete || autocompleteResults.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex(prev => Math.min(prev + 1, autocompleteResults.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex(prev => Math.max(prev - 1, 0));
+    } else if (e.key === "Enter" && highlightedIndex >= 0) {
+      e.preventDefault();
+      selectAutocomplete(autocompleteResults[highlightedIndex]);
+    } else if (e.key === "Escape") {
+      setShowAutocomplete(false);
+    }
+  }
+
+  function highlightMatch(text, term) {
+    if (!term) return text;
+    const idx = text.toLowerCase().indexOf(term.toLowerCase());
+    if (idx === -1) return text;
+    return React.createElement("span", null,
+      text.slice(0, idx),
+      React.createElement("span", { className: "search-match" }, text.slice(idx, idx + term.length)),
+      text.slice(idx + term.length)
+    );
   }
 
   // Derived state
   const selectedNode = selected;
-  const parentNode = selectedNode?.parent ? OLOGIES.find(o => o.id === selectedNode.parent) : null;
+  const parentNode = selectedNode?.parent ? OLOGY_MAP.get(selectedNode.parent) : null;
   const childNodes = selectedNode ? OLOGIES.filter(o => o.parent === selectedNode.id) : [];
+  const ancestry = selectedNode ? getAncestry(selectedNode) : [];
+  const relatedFields = selectedNode ? getRelated(selectedNode) : [];
 
   const catCounts = useMemo(() => {
     const counts = {};
@@ -953,50 +1400,63 @@ function Ologiology() {
           <div className="ornament" style={{ marginBottom: "32px" }}>✦ · ✦ · ✦</div>
           <h1 style={{
             fontSize: "clamp(36px, 6vw, 56px)",
-            fontWeight: 400,
-            letterSpacing: "6px",
-            textTransform: "uppercase",
-            color: "#e8dcc8",
-            lineHeight: 1.1,
-            marginBottom: "16px",
+            fontWeight: 400, letterSpacing: "6px", textTransform: "uppercase",
+            color: "#e8dcc8", lineHeight: 1.1, marginBottom: "16px",
             fontFamily: "'Cormorant Garamond', 'EB Garamond', Georgia, serif",
           }}>
             Ologiology
           </h1>
           <p style={{
-            fontSize: "15px",
-            color: "#8a7e6b",
-            fontStyle: "italic",
-            letterSpacing: "1.5px",
-            lineHeight: 1.7,
-            marginBottom: "8px",
+            fontSize: "15px", color: "#8a7e6b", fontStyle: "italic",
+            letterSpacing: "1.5px", lineHeight: 1.7, marginBottom: "24px",
           }}>
             The study of studies.
           </p>
-          <p style={{
-            fontSize: "13px",
-            color: "#5a5248",
-            lineHeight: 1.6,
-            marginBottom: "36px",
-            maxWidth: "420px",
-            marginLeft: "auto",
-            marginRight: "auto",
+
+          {/* Today's Discovery */}
+          <div style={{
+            background: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            borderRadius: "8px", padding: "18px 22px", marginBottom: "28px",
+            textAlign: "left",
           }}>
-            An interactive atlas of {OLOGIES.length} fields of human inquiry, from Acarology to Zymology — mapped as a living constellation of knowledge.
+            <div style={{ fontSize: "9px", textTransform: "uppercase", letterSpacing: "2.5px", color: "#5a5248", marginBottom: "8px" }}>
+              Today's Discovery
+            </div>
+            <div style={{ fontSize: "18px", color: "#e8dcc8", marginBottom: "4px", fontFamily: "'Cormorant Garamond', serif" }}>
+              {todaysDiscovery.label}
+            </div>
+            <div style={{
+              display: "inline-block", fontSize: "9px", textTransform: "uppercase", letterSpacing: "2px",
+              color: CATEGORY_COLORS[todaysDiscovery.category]?.glow, marginBottom: "8px",
+            }}>
+              {todaysDiscovery.category}
+            </div>
+            <p style={{ fontSize: "13px", color: "#8a7e6b", lineHeight: 1.55, margin: 0 }}>
+              {todaysDiscovery.desc}
+            </p>
+            {todaysWiki && (
+              <p style={{ fontSize: "12px", color: "#6b6054", lineHeight: 1.55, marginTop: "8px", fontStyle: "italic" }}>
+                {todaysWiki.extract}
+              </p>
+            )}
+          </div>
+
+          <p style={{
+            fontSize: "13px", color: "#5a5248", lineHeight: 1.6, marginBottom: "28px",
+            maxWidth: "420px", marginLeft: "auto", marginRight: "auto",
+          }}>
+            An interactive atlas of {OLOGIES.length} fields of human inquiry, mapped as a living constellation of knowledge.
           </p>
           <button
             onClick={() => setShowIntro(false)}
             style={{
               background: "transparent",
               border: "1px solid rgba(232, 220, 200, 0.2)",
-              color: "#e8dcc8",
-              padding: "12px 40px",
-              borderRadius: "2px",
-              cursor: "pointer",
-              fontSize: "14px",
+              color: "#e8dcc8", padding: "12px 40px", borderRadius: "2px",
+              cursor: "pointer", fontSize: "14px",
               fontFamily: "'EB Garamond', Georgia, serif",
-              letterSpacing: "3px",
-              textTransform: "uppercase",
+              letterSpacing: "3px", textTransform: "uppercase",
               transition: "all 0.3s ease",
             }}
             onMouseEnter={e => { e.target.style.borderColor = "rgba(232,220,200,0.5)"; e.target.style.background = "rgba(232,220,200,0.05)"; }}
@@ -1021,7 +1481,6 @@ function Ologiology() {
       overflow: "hidden",
       animation: "fadeIn 0.6s ease",
     }}>
-      {/* Ambient radial accents */}
       <div style={{
         position: "absolute", inset: 0, pointerEvents: "none",
         background: "radial-gradient(ellipse at 15% 50%, rgba(139,92,246,0.03) 0%, transparent 50%), radial-gradient(ellipse at 85% 25%, rgba(34,197,94,0.025) 0%, transparent 45%), radial-gradient(ellipse at 50% 90%, rgba(245,158,11,0.02) 0%, transparent 40%)",
@@ -1035,13 +1494,10 @@ function Ologiology() {
         flexWrap: "wrap", gap: "12px",
       }}>
         <div style={{ minWidth: "200px" }}>
+          <a href="../index.html" className="back-link">← Back to portfolio</a>
           <h1 style={{
-            fontSize: "clamp(20px, 3vw, 32px)",
-            fontWeight: 400,
-            margin: 0,
-            letterSpacing: "4px",
-            textTransform: "uppercase",
-            color: "#e8dcc8",
+            fontSize: "clamp(20px, 3vw, 32px)", fontWeight: 400, margin: "8px 0 0",
+            letterSpacing: "4px", textTransform: "uppercase", color: "#e8dcc8",
             fontFamily: "'Cormorant Garamond', 'EB Garamond', Georgia, serif",
           }}>
             Ologiology
@@ -1055,55 +1511,75 @@ function Ologiology() {
         </div>
 
         <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-          <input
-            type="text"
-            placeholder="Search ologies…"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            style={{
-              background: "rgba(255,255,255,0.035)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "3px",
-              padding: "7px 13px",
-              color: "#e8dcc8",
-              fontSize: "13px",
-              fontFamily: "'EB Garamond', Georgia, serif",
-              width: "190px",
-              outline: "none",
-              letterSpacing: "0.4px",
-              transition: "border-color 0.2s",
-            }}
-            onFocus={e => e.target.style.borderColor = "rgba(255,255,255,0.18)"}
-            onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
-          />
+          <div style={{ position: "relative" }} ref={searchRef}>
+            <input
+              type="text"
+              placeholder="Search ologies…"
+              value={searchTerm}
+              onChange={e => {
+                setSearchTerm(e.target.value);
+                setShowAutocomplete(e.target.value.length > 0);
+                setHighlightedIndex(-1);
+              }}
+              onFocus={() => { if (searchTerm.length > 0) setShowAutocomplete(true); }}
+              onBlur={() => setTimeout(() => setShowAutocomplete(false), 200)}
+              onKeyDown={handleSearchKeyDown}
+              style={{
+                background: "rgba(255,255,255,0.035)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "3px", padding: "7px 13px",
+                color: "#e8dcc8", fontSize: "13px",
+                fontFamily: "'EB Garamond', Georgia, serif",
+                width: "190px", outline: "none",
+                letterSpacing: "0.4px", transition: "border-color 0.2s",
+              }}
+            />
+
+            {/* Autocomplete dropdown */}
+            {showAutocomplete && autocompleteResults.length > 0 && (
+              <div className="search-autocomplete">
+                <div style={{
+                  padding: "6px 13px", fontSize: "10px", color: "#5a5248",
+                  letterSpacing: "1px", borderBottom: "1px solid rgba(255,255,255,0.04)",
+                }}>
+                  {autocompleteResults.length} result{autocompleteResults.length !== 1 ? 's' : ''}
+                </div>
+                {autocompleteResults.map((r, i) => (
+                  <div
+                    key={r.id}
+                    className={`search-result ${i === highlightedIndex ? 'highlighted' : ''}`}
+                    onMouseDown={e => { e.preventDefault(); selectAutocomplete(r); }}
+                    onMouseEnter={() => setHighlightedIndex(i)}
+                  >
+                    <span className="search-result-dot" style={{ background: CATEGORY_COLORS[r.category]?.base }} />
+                    <span className="search-result-name">{highlightMatch(r.label, searchTerm)}</span>
+                    <span className="search-result-desc">{r.desc}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button onClick={pickRandom} title="Random ology" style={{
             background: "rgba(255,255,255,0.035)",
             border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "3px",
-            padding: "6px 12px",
-            color: "#8a7e6b",
-            fontSize: "13px",
-            cursor: "pointer",
+            borderRadius: "3px", padding: "6px 12px",
+            color: "#8a7e6b", fontSize: "13px", cursor: "pointer",
             fontFamily: "'EB Garamond', Georgia, serif",
-            transition: "all 0.2s",
-            letterSpacing: "0.5px",
+            transition: "all 0.2s", letterSpacing: "0.5px",
           }}
           onMouseEnter={e => { e.target.style.color = "#e8dcc8"; e.target.style.borderColor = "rgba(255,255,255,0.18)"; }}
           onMouseLeave={e => { e.target.style.color = "#8a7e6b"; e.target.style.borderColor = "rgba(255,255,255,0.08)"; }}
           >
-            ✦ Random
+            ✦ Discover
           </button>
           <button onClick={() => setShowAbout(true)} title="About" style={{
             background: "rgba(255,255,255,0.035)",
             border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "3px",
-            padding: "6px 12px",
-            color: "#8a7e6b",
-            fontSize: "13px",
-            cursor: "pointer",
+            borderRadius: "3px", padding: "6px 12px",
+            color: "#8a7e6b", fontSize: "13px", cursor: "pointer",
             fontFamily: "'EB Garamond', Georgia, serif",
-            transition: "all 0.2s",
-            letterSpacing: "0.5px",
+            transition: "all 0.2s", letterSpacing: "0.5px",
           }}
           onMouseEnter={e => { e.target.style.color = "#e8dcc8"; e.target.style.borderColor = "rgba(255,255,255,0.18)"; }}
           onMouseLeave={e => { e.target.style.color = "#8a7e6b"; e.target.style.borderColor = "rgba(255,255,255,0.08)"; }}
@@ -1125,8 +1601,7 @@ function Ologiology() {
           style={{
             color: activeCategories.size === CATEGORIES.length ? "#8a7e6b" : "#6b6054",
             borderColor: "rgba(255,255,255,0.1)",
-            fontStyle: "italic",
-            fontSize: "10.5px",
+            fontStyle: "italic", fontSize: "10.5px",
           }}
         >
           {activeCategories.size === CATEGORIES.length ? "clear" : "all"}
@@ -1148,12 +1623,10 @@ function Ologiology() {
               }}
             >
               <span style={{
-                display: "inline-block",
-                width: "5px", height: "5px",
+                display: "inline-block", width: "5px", height: "5px",
                 borderRadius: "50%",
                 background: active ? color.base : "#3a3530",
-                marginRight: "5px",
-                verticalAlign: "middle",
+                marginRight: "5px", verticalAlign: "middle",
               }} />
               {cat}
               {active && count > 0 && (
@@ -1166,10 +1639,8 @@ function Ologiology() {
 
       {/* ── GRAPH ─────────────────────────────────── */}
       <div ref={containerRef} style={{
-        position: "relative",
-        width: "100%",
-        height: "calc(100vh - 120px)",
-        minHeight: "400px",
+        position: "relative", width: "100%",
+        height: "calc(100vh - 120px)", minHeight: "400px",
       }}>
         <svg
           ref={svgRef}
@@ -1180,10 +1651,8 @@ function Ologiology() {
 
         {/* Zoom controls */}
         <div className="zoom-controls" style={{
-          position: "absolute",
-          bottom: "24px", right: "24px",
-          display: "flex", flexDirection: "column", gap: "6px",
-          zIndex: 15,
+          position: "absolute", bottom: "24px", right: "24px",
+          display: "flex", flexDirection: "column", gap: "6px", zIndex: 15,
         }}>
           <button className="zoom-btn" onClick={() => handleZoom(1.4)} title="Zoom in">+</button>
           <button className="zoom-btn" onClick={() => handleZoom(0.7)} title="Zoom out">−</button>
@@ -1196,40 +1665,57 @@ function Ologiology() {
             borderColor: CATEGORY_COLORS[selectedNode.category]?.base + "30",
             borderWidth: "1px", borderStyle: "solid",
           }}>
+            <div className="drag-handle" />
+
+            {/* Breadcrumbs */}
+            {ancestry.length > 0 && (
+              <div className="breadcrumbs">
+                {ancestry.map((a, i) => (
+                  <span key={a.id}>
+                    <span
+                      className="breadcrumb-item"
+                      onClick={e => { e.stopPropagation(); navigateTo(a); }}
+                      style={{ color: CATEGORY_COLORS[a.category]?.glow }}
+                    >{a.label}</span>
+                    <span className="breadcrumb-sep"> → </span>
+                  </span>
+                ))}
+                <span style={{ color: "#8a7e6b" }}>{selectedNode.label}</span>
+              </div>
+            )}
+
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div>
+              <div style={{ flex: 1 }}>
                 <span style={{
-                  fontSize: "9px",
-                  textTransform: "uppercase",
-                  letterSpacing: "2.5px",
+                  fontSize: "9px", textTransform: "uppercase", letterSpacing: "2.5px",
                   color: CATEGORY_COLORS[selectedNode.category]?.glow,
-                  display: "block",
-                  marginBottom: "5px",
+                  display: "block", marginBottom: "5px",
                 }}>
                   {selectedNode.category}
                 </span>
                 <h2 style={{
-                  fontSize: "clamp(18px, 2.5vw, 24px)",
-                  fontWeight: 400,
-                  margin: 0,
-                  color: "#f0e6d3",
-                  letterSpacing: "0.5px",
+                  fontSize: "clamp(18px, 2.5vw, 24px)", fontWeight: 400, margin: 0,
+                  color: "#f0e6d3", letterSpacing: "0.5px",
                   fontFamily: "'Cormorant Garamond', 'EB Garamond', Georgia, serif",
                 }}>
                   {selectedNode.label}
                 </h2>
               </div>
-              <button
-                onClick={e => { e.stopPropagation(); setSelected(null); }}
-                style={{
-                  background: "none", border: "none",
-                  color: "#5a5248", fontSize: "20px",
-                  cursor: "pointer", padding: "0 4px", lineHeight: 1,
-                  transition: "color 0.2s",
-                }}
-                onMouseEnter={e => e.target.style.color = "#e8dcc8"}
-                onMouseLeave={e => e.target.style.color = "#5a5248"}
-              >×</button>
+              <div style={{ display: "flex", gap: "4px", alignItems: "center", flexShrink: 0 }}>
+                <button className="nav-history-btn" onClick={goBack} disabled={!canGoBack} title="Back">←</button>
+                <button className="nav-history-btn" onClick={goForward} disabled={!canGoForward} title="Forward">→</button>
+                <button
+                  onClick={e => { e.stopPropagation(); setSelected(null); }}
+                  style={{
+                    background: "none", border: "none",
+                    color: "#5a5248", fontSize: "20px",
+                    cursor: "pointer", padding: "0 4px", lineHeight: 1,
+                    transition: "color 0.2s", marginLeft: "4px",
+                  }}
+                  onMouseEnter={e => e.target.style.color = "#e8dcc8"}
+                  onMouseLeave={e => e.target.style.color = "#5a5248"}
+                >×</button>
+              </div>
             </div>
 
             <p style={{
@@ -1238,6 +1724,21 @@ function Ologiology() {
             }}>
               {selectedNode.desc}
             </p>
+
+            {/* Wikipedia extract */}
+            {wikiLoading && (
+              <div className="wiki-section">
+                <span className="wiki-extract wiki-loading" style={{ color: "#5a5248" }}>Loading from Wikipedia</span>
+              </div>
+            )}
+            {wikiData && (
+              <div className="wiki-section">
+                <p className="wiki-extract">{wikiData.extract}</p>
+                <a href={wikiData.url} target="_blank" rel="noopener noreferrer" className="wiki-link">
+                  Read more on Wikipedia →
+                </a>
+              </div>
+            )}
 
             <div style={{
               display: "flex", gap: "16px",
@@ -1259,7 +1760,7 @@ function Ologiology() {
                   Branch of:{" "}
                   <span
                     className="clickable-ology"
-                    onClick={e => { e.stopPropagation(); setSelected(parentNode); }}
+                    onClick={e => { e.stopPropagation(); navigateTo(parentNode); }}
                     style={{
                       color: CATEGORY_COLORS[parentNode.category]?.glow,
                       textDecorationColor: CATEGORY_COLORS[parentNode.category]?.base + "40",
@@ -1280,7 +1781,7 @@ function Ologiology() {
                   <span key={c.id}>
                     <span
                       className="clickable-ology"
-                      onClick={e => { e.stopPropagation(); setSelected(c); }}
+                      onClick={e => { e.stopPropagation(); navigateTo(c); }}
                       style={{
                         color: CATEGORY_COLORS[c.category]?.glow,
                         textDecorationColor: CATEGORY_COLORS[c.category]?.base + "40",
@@ -1294,21 +1795,59 @@ function Ologiology() {
                 )}
               </div>
             )}
+
+            {/* Related fields */}
+            {relatedFields.length > 0 && (
+              <div style={{
+                marginTop: "10px", paddingTop: "10px",
+                borderTop: "1px solid rgba(255,255,255,0.04)",
+                fontSize: "11px", color: "#6b6054",
+              }}>
+                See also:{" "}
+                {relatedFields.map((r, i) => (
+                  <span key={r.id}>
+                    <span
+                      className="clickable-ology"
+                      onClick={e => { e.stopPropagation(); navigateTo(r); }}
+                      style={{
+                        color: CATEGORY_COLORS[r.category]?.glow,
+                        textDecorationColor: CATEGORY_COLORS[r.category]?.base + "40",
+                      }}
+                    >{r.label}</span>
+                    {i < relatedFields.length - 1 ? ", " : ""}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Action links */}
+            <div className="detail-actions">
+              <a
+                href={`https://scholar.google.com/scholar?q=${encodeURIComponent(selectedNode.label)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="detail-action-link"
+              >
+                Search on Google Scholar →
+              </a>
+              <button className="detail-action-link" onClick={shareUrl}>
+                Share link
+              </button>
+            </div>
           </div>
         )}
+
+        {/* Share toast */}
+        {showToast && <div className="share-toast">Copied link to clipboard</div>}
 
         {/* Hint text */}
         {!selectedNode && graphReady && (
           <div style={{
-            position: "absolute",
-            bottom: "20px", left: "50%",
+            position: "absolute", bottom: "20px", left: "50%",
             transform: "translateX(-50%)",
-            fontSize: "11px",
-            color: "#302c26",
-            letterSpacing: "1.2px",
-            textAlign: "center",
-            fontStyle: "italic",
-            animation: "fadeIn 1.5s ease",
+            fontSize: "11px", color: "#302c26",
+            letterSpacing: "1.2px", textAlign: "center",
+            fontStyle: "italic", animation: "fadeIn 1.5s ease",
             pointerEvents: "none",
           }}>
             click a node to explore · drag to rearrange · scroll to zoom
@@ -1367,8 +1906,7 @@ function Ologiology() {
 
             <h3 style={{
               fontSize: "12px", textTransform: "uppercase",
-              letterSpacing: "2px", color: "#8a7e6b",
-              marginBottom: "14px",
+              letterSpacing: "2px", color: "#8a7e6b", marginBottom: "14px",
             }}>
               By the Numbers
             </h3>
@@ -1394,8 +1932,7 @@ function Ologiology() {
 
             <h3 style={{
               fontSize: "12px", textTransform: "uppercase",
-              letterSpacing: "2px", color: "#8a7e6b",
-              marginBottom: "14px",
+              letterSpacing: "2px", color: "#8a7e6b", marginBottom: "14px",
             }}>
               Obscurity Breakdown
             </h3>
@@ -1415,14 +1952,13 @@ function Ologiology() {
 
             <h3 style={{
               fontSize: "12px", textTransform: "uppercase",
-              letterSpacing: "2px", color: "#8a7e6b",
-              marginBottom: "14px",
+              letterSpacing: "2px", color: "#8a7e6b", marginBottom: "14px",
             }}>
               How to Navigate
             </h3>
             <div style={{ fontSize: "13px", color: "#8a7e6b", lineHeight: 1.7 }}>
               <p style={{ marginBottom: "8px" }}>
-                <strong style={{ color: "#b0a48e" }}>Click</strong> any node to see its description and connections.
+                <strong style={{ color: "#b0a48e" }}>Click</strong> any node to see its description, Wikipedia summary, and connections.
               </p>
               <p style={{ marginBottom: "8px" }}>
                 <strong style={{ color: "#b0a48e" }}>Hover</strong> to highlight connected fields.
@@ -1434,10 +1970,13 @@ function Ologiology() {
                 <strong style={{ color: "#b0a48e" }}>Scroll</strong> or use the +/− buttons to zoom.
               </p>
               <p style={{ marginBottom: "8px" }}>
-                <strong style={{ color: "#b0a48e" }}>Filter</strong> by category using the pills above the graph.
+                <strong style={{ color: "#b0a48e" }}>Search</strong> with autocomplete to find any field.
+              </p>
+              <p style={{ marginBottom: "8px" }}>
+                <strong style={{ color: "#b0a48e" }}>Navigate</strong> with ← → buttons, breadcrumbs, and "See also" links.
               </p>
               <p>
-                <strong style={{ color: "#b0a48e" }}>Search</strong> to find a specific field, or hit ✦ Random for a surprise.
+                <strong style={{ color: "#b0a48e" }}>Share</strong> any ology via its unique URL.
               </p>
             </div>
 

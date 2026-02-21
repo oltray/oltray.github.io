@@ -1,19 +1,7 @@
 // ============================================
-// REMINGTON WESTBROOK - RETRO-NOIR PORTFOLIO JS
-// Clean, mobile-friendly interactions
+// REMINGTON WESTBROOK - PORTFOLIO JS
+// Single-page: scrollspy, expand/collapse, hash nav
 // ============================================
-
-// === CLOCK ===
-function updateClock() {
-  const now = new Date();
-  const h = String(now.getHours()).padStart(2, '0');
-  const m = String(now.getMinutes()).padStart(2, '0');
-  const s = String(now.getSeconds()).padStart(2, '0');
-  const el = document.getElementById('clock');
-  if (el) el.textContent = `${h}:${m}:${s}`;
-}
-setInterval(updateClock, 1000);
-updateClock();
 
 // === SCROLL REVEAL ===
 const reveals = document.querySelectorAll('.reveal');
@@ -39,59 +27,141 @@ if (nav) {
   }, { passive: true });
 }
 
-// === CLOSE MOBILE NAV ON LINK CLICK ===
-document.querySelectorAll('.nav-links a').forEach(link => {
-  link.addEventListener('click', () => {
-    const navLinks = document.getElementById('navLinks');
+// === SECTION EXPAND/COLLAPSE ===
+const sectionHeaders = document.querySelectorAll('.section-header');
+
+function expandSection(panel) {
+  const body = panel.querySelector('.section-body');
+  const header = panel.querySelector('.section-header');
+  const toggle = panel.querySelector('.section-toggle');
+  if (!body || !header) return;
+
+  panel.classList.add('open');
+  header.setAttribute('aria-expanded', 'true');
+  if (toggle) toggle.textContent = '−';
+  body.style.maxHeight = body.scrollHeight + 'px';
+
+  // Re-observe reveals inside the section
+  panel.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+}
+
+function collapseSection(panel) {
+  const body = panel.querySelector('.section-body');
+  const header = panel.querySelector('.section-header');
+  const toggle = panel.querySelector('.section-toggle');
+  if (!body || !header) return;
+
+  panel.classList.remove('open');
+  header.setAttribute('aria-expanded', 'false');
+  if (toggle) toggle.textContent = '+';
+  body.style.maxHeight = '0';
+}
+
+function toggleSection(panel) {
+  if (panel.classList.contains('open')) {
+    collapseSection(panel);
+  } else {
+    expandSection(panel);
+  }
+}
+
+sectionHeaders.forEach(header => {
+  header.addEventListener('click', () => {
+    const panel = header.closest('.section-panel');
+    if (panel) {
+      toggleSection(panel);
+      // Update hash
+      const id = panel.id;
+      if (id) {
+        if (panel.classList.contains('open')) {
+          history.replaceState(null, '', '#' + id);
+        } else {
+          history.replaceState(null, '', window.location.pathname);
+        }
+      }
+    }
+  });
+});
+
+// === SCROLLSPY ===
+const sections = document.querySelectorAll('.section-panel');
+const navLinks = document.querySelectorAll('.nav-links a[href^="#"]');
+
+const scrollspyObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    const id = entry.target.id;
+    const link = document.querySelector(`.nav-links a[href="#${id}"]`);
+    if (link) {
+      if (entry.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+      }
+    }
+  });
+}, { threshold: 0.2, rootMargin: '-60px 0px 0px 0px' });
+
+sections.forEach(section => scrollspyObserver.observe(section));
+
+// === NAV CLICK: EXPAND + SMOOTH SCROLL ===
+navLinks.forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const targetId = link.getAttribute('href').substring(1);
+    const targetPanel = document.getElementById(targetId);
+
+    if (targetPanel) {
+      // Expand section if collapsed
+      if (!targetPanel.classList.contains('open')) {
+        expandSection(targetPanel);
+      }
+
+      // Smooth scroll after a brief delay to let expand animation start
+      setTimeout(() => {
+        targetPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+
+      // Update hash
+      history.replaceState(null, '', '#' + targetId);
+    }
+
+    // Close mobile nav
+    const navLinksEl = document.getElementById('navLinks');
     const hamburger = document.querySelector('.hamburger');
-    if (navLinks) navLinks.classList.remove('open');
+    if (navLinksEl) navLinksEl.classList.remove('open');
     if (hamburger) hamburger.classList.remove('open');
   });
 });
 
-// === TERMINAL TYPING EFFECT (contact page) ===
-const terminalCommands = document.querySelectorAll('.terminal-line .command');
-terminalCommands.forEach((line, index) => {
-  const text = line.textContent;
-  line.textContent = '';
-  line.style.opacity = '1';
+// === CLOSE MOBILE NAV ON LINK CLICK (logo) ===
+const logoLink = document.querySelector('.nav-logo');
+if (logoLink) {
+  logoLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    history.replaceState(null, '', window.location.pathname);
+    const navLinksEl = document.getElementById('navLinks');
+    const hamburger = document.querySelector('.hamburger');
+    if (navLinksEl) navLinksEl.classList.remove('open');
+    if (hamburger) hamburger.classList.remove('open');
+  });
+}
 
-  setTimeout(() => {
-    let charIndex = 0;
-    const interval = setInterval(() => {
-      if (charIndex < text.length) {
-        line.textContent += text.charAt(charIndex);
-        charIndex++;
-      } else {
-        clearInterval(interval);
-      }
-    }, 40);
-  }, index * 800);
-});
-
-// === EASTER EGG: KONAMI CODE ===
-const konamiCode = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
-let konamiIndex = 0;
-
-document.addEventListener('keydown', (e) => {
-  if (e.key.toLowerCase() === konamiCode[konamiIndex].toLowerCase()) {
-    konamiIndex++;
-    if (konamiIndex === konamiCode.length) {
-      document.body.style.animation = 'hueShift 2s linear infinite';
-      const style = document.createElement('style');
-      style.textContent = '@keyframes hueShift { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }';
-      document.head.appendChild(style);
+// === HASH NAVIGATION (on load + hashchange) ===
+function handleHash() {
+  const hash = window.location.hash.substring(1);
+  if (hash) {
+    const panel = document.getElementById(hash);
+    if (panel && panel.classList.contains('section-panel')) {
+      expandSection(panel);
       setTimeout(() => {
-        document.body.style.animation = '';
-        style.remove();
-      }, 5000);
-      konamiIndex = 0;
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
     }
-  } else {
-    konamiIndex = 0;
   }
-});
+}
 
-// === CONSOLE CREDIT ===
-console.log('%c⬡ REMINGTON WESTBROOK', 'font-size: 16px; font-weight: bold; color: #e63946;');
-console.log('%cRetro-Noir Portfolio — Big-O × Bebop × Akira', 'font-size: 11px; color: #d4a029;');
+// Run on load
+handleHash();
+
+// Listen for hash changes
+window.addEventListener('hashchange', handleHash);
