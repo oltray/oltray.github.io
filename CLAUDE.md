@@ -24,7 +24,7 @@ Key features: Wikipedia API integration (cached in `Map`), search autocomplete, 
 
 The `OLOGIES` array contains 628 entries with `id`, `label`, `category`, `desc`, `parent`, `obscurity`, and optional `wikiTitle` (used when label doesn't match Wikipedia article title).
 
-### FinVis (`n/projects/finvis/`)
+### FinVis (`n/finvis/`)
 Pre-built PWA deployed as static assets (Vite output). Source code lives in a separate repository (`oltray/financevisualizer`). Do not edit files in this directory — they are build artifacts.
 
 ### Legacy (`n/projects/finance-visualizer/index.html`)
