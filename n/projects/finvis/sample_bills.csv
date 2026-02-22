@@ -1,0 +1,41 @@
+id,name,amount,frequency,category,dueDay,type,isPaid,notes
+bill_001,Rent,1200.00,monthly,housing,1,ongoing,true,Monthly rent payment
+bill_002,Electric Bill,85.50,monthly,utilities,15,ongoing,false,Average usage
+bill_003,Water & Sewer,45.00,monthly,utilities,20,ongoing,false,
+bill_004,Internet,79.99,monthly,utilities,5,ongoing,true,1 Gbps fiber
+bill_005,Car Payment,425.00,monthly,transportation,10,contract,true,36 months remaining
+bill_006,Car Insurance,145.00,monthly,insurance,1,ongoing,true,Full coverage
+bill_007,Health Insurance,280.00,monthly,insurance,1,ongoing,true,PPO plan
+bill_008,Netflix,15.49,monthly,subscriptions,12,ongoing,true,Standard plan
+bill_009,Spotify,10.99,monthly,subscriptions,8,ongoing,true,Premium
+bill_010,Disney+,7.99,monthly,subscriptions,18,ongoing,false,
+bill_011,Gym Membership,49.99,monthly,lifestyle,3,ongoing,false,24/7 access
+bill_012,Phone Bill,65.00,monthly,utilities,22,ongoing,false,Unlimited data
+bill_013,Credit Card Min,50.00,monthly,debt,25,ongoing,false,$2,400 balance
+bill_014,Student Loan,215.00,monthly,debt,28,ongoing,true,Federal loan
+bill_015,Gas Bill,55.00,monthly,utilities,18,ongoing,false,Winter months higher
+bill_016,Renter's Insurance,18.00,monthly,insurance,1,ongoing,true,
+bill_017,Savings Transfer,200.00,monthly,savings,2,ongoing,true,Emergency fund
+bill_018,Hulu,14.99,monthly,subscriptions,15,ongoing,false,No ads
+bill_019,Amazon Prime,14.99,monthly,subscriptions,20,ongoing,true,Annual divided by 12
+bill_020,Parking Spot,150.00,monthly,housing,1,ongoing,true,Reserved spot
+bill_021,HOA Fees,75.00,monthly,housing,1,ongoing,true,
+bill_022,Life Insurance,35.00,monthly,insurance,5,ongoing,true,Term life
+bill_023,Pet Insurance,45.00,monthly,other,12,ongoing,false,For dog
+bill_024,Therapy,120.00,weekly,lifestyle,0,ongoing,false,Weekly sessions
+bill_025,Meal Prep Service,89.00,weekly,lifestyle,0,ongoing,false,Sunday delivery
+bill_026,Gas for Car,60.00,biweekly,transportation,0,ongoing,false,Fill-up twice monthly
+bill_027,Coffee Subscription,25.00,monthly,lifestyle,10,ongoing,true,Freshly roasted
+bill_028,Cloud Storage,9.99,monthly,subscriptions,14,ongoing,true,2TB
+bill_029,VPN Service,12.99,monthly,subscriptions,7,ongoing,true,Privacy protection
+bill_030,Domain & Hosting,15.00,monthly,other,11,ongoing,false,Personal website
+bill_031,Car Registration,180.00,yearly,transportation,1,ongoing,false,Due in 3 months
+bill_032,Amazon Music,9.99,monthly,subscriptions,22,ongoing,false,
+bill_033,LinkedIn Premium,29.99,monthly,subscriptions,5,ongoing,false,Career development
+bill_034,Meal Kit Delivery,139.00,weekly,lifestyle,0,ongoing,false,3 meals for 2
+bill_035,Dry Cleaning,40.00,monthly,lifestyle,15,ongoing,false,Work clothes
+bill_036,House Cleaner,120.00,biweekly,housing,0,ongoing,false,Every other week
+bill_037,Lawn Service,60.00,monthly,housing,1,ongoing,true,April-October
+bill_038,Security System,39.99,monthly,housing,10,ongoing,true,ADT monitoring
+bill_039,IRA Contribution,500.00,monthly,savings,1,ongoing,true,Retirement
+bill_040,Emergency Savings,150.00,monthly,savings,15,ongoing,false,Building fund
