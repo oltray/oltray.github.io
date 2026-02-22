@@ -25,7 +25,9 @@ Key features: Wikipedia API integration (cached in `Map`), search autocomplete, 
 The `OLOGIES` array contains 628 entries with `id`, `label`, `category`, `desc`, `parent`, `obscurity`, and optional `wikiTitle` (used when label doesn't match Wikipedia article title).
 
 ### FinVis (`n/finvis/`)
-Pre-built PWA deployed as static assets (Vite output). Source code lives in a separate repository (`oltray/financevisualizer`). Do not edit files in this directory — they are build artifacts.
+Pre-built PWA deployed as static assets (Vite output). Source code lives at `/Users/rw/Projects/finvis/` (local only, no remote). Do not edit files in this directory — they are build artifacts.
+
+**FinVis workflow:** Edit source in `/Users/rw/Projects/finvis/src/`, run `npm run build` in that directory, copy `dist/` to `n/finvis/`, then commit and push this repo.
 
 ### Legacy (`n/projects/finance-visualizer/index.html`)
 Standalone single-file React app. Predecessor to FinVis.
