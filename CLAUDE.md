@@ -17,7 +17,7 @@ Single-page site with expandable section-panels (Work, About, Writing, Contact).
 
 Nav uses anchor links (`#work`, `#about`, `#writing`, `#contact`). URL hash auto-expands the corresponding section on page load.
 
-### Ologiology (`n/projects/ologiology/index.html`)
+### Ologiology (`n/ologiology/index.html`)
 Self-contained React 18 + D3.js force-directed knowledge graph (~2000 lines, single file). Uses CDN-loaded React, ReactDOM, Babel (in-browser JSX transform), and D3. Has its own font stack (EB Garamond/Cormorant Garamond) and design identity separate from the portfolio.
 
 Key features: Wikipedia API integration (cached in `Map`), search autocomplete, back/forward navigation history, breadcrumbs, shareable `?ology=` URLs, mobile bottom sheet.
