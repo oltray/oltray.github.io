@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script>
+        var path = window.location.pathname;
+        // If path doesn't start with /n/, prepend it and redirect
+        if (!path.startsWith('/n/')) {
+            window.location.replace('/n' + (path === '/' ? '/' : path) + window.location.search + window.location.hash);
+        } else {
+            window.location.replace('/n/');
+        }
+    </script>
+</head>
+<body>
+    <p>Redirecting...</p>
+</body>
+</html>
