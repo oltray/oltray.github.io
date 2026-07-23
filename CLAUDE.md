@@ -1,152 +1,115 @@
 # oltray.github.io — Claude context
 
-This repo is the **published GitHub Pages site** (`oltray.github.io`). It contains
-**build output only**, not source. The portfolio pages live under `n/`, and the
-FinVis app lives at `n/finvis/` as a compiled Vite/React bundle.
+This repo is the **published GitHub Pages site** (`oltray.github.io`, served at
+`reming.to`). It contains **build output only**, not source. The portfolio pages
+live under `n/`, and the FinVis app lives at `n/finvis/` as a compiled Vite/React
+bundle.
 
-- App logic bundle: `n/finvis/assets/index-BsWdoi_T.js` (single minified line)
+- App logic bundle: `n/finvis/assets/index-*.js` (single minified line)
 - Vendors: `react-vendor-*.js`, `chart-vendor-*.js`, `db-vendor-*.js`
-- Styles: `n/finvis/assets/index-nnfXGXhk.css`
+- Styles: `n/finvis/assets/index-*.css`
+
+Asset filenames are content-hashed and change on every rebuild — never hardcode
+them anywhere; the built `index.html` and `sw.js` reference them automatically.
 
 > **Important:** The FinVis *source project* (Vite + React + TypeScript) is **not**
 > in this repo. It lives at **`/Volumes/Lilith/brain/finvis/`** (working copy used
 > when on the external drive), mirrored from `~/Projects/finvis` on the main Mac,
-> and is backed by the private GitHub repo `oltray/finvis`.
+> and is backed by the private GitHub repo **`oltray/finvis`** (branch `main`).
 > Fixes are applied in that **source project**, then rebuilt, with the resulting
 > `dist/` copied back into `n/finvis/`. Do **not** rebuild FinVis from scratch, and
-> do **not** edit the minified bundles here — they are build output. The bundle
-> references below are diagnostic evidence only.
+> do **not** edit the minified bundles here — they are build output.
 >
-> Note: Lilith is exFAT, so the copy there needs `git config core.fileMode false`
-> and `node_modules` cannot be installed on it (symlinks unsupported) — build from
-> `~/Projects/finvis` or an APFS scratch copy.
+> `~/Projects/finvis` predates the private repo and has no remote; if you work
+> there, add `origin` and pull first or the two copies will diverge.
 
 ---
 
-# FinVis fix plan (deferred)
+# Working on this repo from Lilith (exFAT)
 
-Six issues to fix in the FinVis source, then rebuild and redeploy to `n/finvis/`.
-Ordered roughly easy → hard.
+The external drive is exFAT, which stores neither Unix permissions nor symlinks.
+Two consequences that will otherwise waste a session:
 
-## Deploy loop (do this once source is located)
-1. `npm install` in the FinVis source project.
-2. `npm run dev` — verify each fix against a real dev server (the whole point of
-   using source instead of patching the bundle).
-3. `npm run build`.
-4. Copy the built `dist/*` over `n/finvis/` (keep the `/n/finvis/` base path — the
-   built `index.html` uses absolute `/n/finvis/assets/...` URLs and a PWA manifest;
-   preserve that base in `vite.config` `base: '/n/finvis/'`).
-5. Commit.
-
----
-
-## 1. Recurring bills show as one inflated monthly event on the calendar
-**Symptom:** A $70/weekly bill appears as a single ~$280 event instead of one event
-per weekly occurrence. Affects all non-monthly schedule types.
-
-**Root cause (confirmed from bundle):**
-- The Payment Calendar renders a month grid and places bills with
-  `bills.filter(b => b.dueDay === dayOfMonth)` — i.e. every bill is pinned to a
-  single day-of-month (`dueDay`).
-- The amount shown is run through a monthly normalizer
-  `Lt(amount, frequency) = amount * Rt[frequency]` (weekly factor ≈ 4.33), so
-  `$70 weekly → ~$303/mo` collapses into one event on one day.
-
-**Fix (source level):**
-- In the calendar event builder, **expand each recurring bill into one event per
-  occurrence within the visible month**, carrying the **raw per-occurrence amount**
-  (not the monthly-normalized amount). Occurrence rules:
-  - `weekly` → every 7 days from an anchor date
-  - `biweekly` → every 14 days from an anchor date
-  - `semi-monthly` → two fixed days (e.g. 1st & 15th, or two configured days)
-  - `monthly` → the single `dueDay`
-  - `annually` → once/year (only in its due month)
-- This means recurring items need an **anchor/start date** (not just `dueDay`); add
-  one to the bill model if missing, defaulting sensibly for existing data.
-- Keep the monthly normalizer (`Lt`) for the *summary/budget totals*, but do **not**
-  use it for individual calendar events.
-
-## 2. CSV export gives a single line / only the first job (esp. mobile)
-**Symptom:** Exported CSV contains one data line and only the first income/job.
-
-**Evidence from bundle:**
-- Row escaper `p`, row joiner `f = rows => rows.map(p).join(",")`, download helper
-  `y = (text, name) => { Blob([text],{type:"text/csv"}); a.href = URL.createObjectURL; a.download; a.click() }`.
-- Income export builds rows then calls `y(t.join("\n"), "finvis-incomes-<date>.csv")`
-  — so a newline join exists on that path.
-
-**Likely causes to check in source:**
-1. **Row generation** — confirm it `.map`s over *all* incomes/jobs, not
-   `incomes[0]` / a `find`. "Only the first job" points at a single-item source.
-2. **Mobile download path** — `a.click()` on a `blob:` URL is unreliable on iOS
-   Safari / some Android browsers; it can save an empty or truncated file. Add a
-   **mobile-safe fallback**: try `navigator.share({ files: [File] })` when
-   available, else open the blob in a new tab / use a `data:` URI, and ensure the
-   anchor is appended to `document.body` before `.click()` and removed after.
-3. **Newline handling** — verify the same `join("\n")` path is used for *every*
-   export (bills, debts, incomes), not a comma-only join somewhere.
-
-## 3. Installments UI missing — no input fields in Bills or Debts
-**Symptom:** Choosing an installment schedule/type offers no fields to enter
-installment data, in either the Bills or Debts forms.
-
-**Evidence from bundle (data model already supports it):**
-- Debt types: `["ongoing","contract","installment","one-time"]`, label map
-  `{ installment: "Installment", ... }`.
-- Filtering logic reads `debt.paymentsRemaining` for `type === "installment"`.
-- So the **model has installment fields but the form UI never renders the inputs**.
-
-**Fix (source level):**
-- In the **Debt form**, when `type === "installment"`, conditionally render inputs
-  for: total/principal amount, number of installments, payments remaining,
-  per-installment amount, first-payment date. Wire them into the saved debt object
-  (`paymentsRemaining`, etc.).
-- In the **Bill form**, if an installment schedule is intended for bills, add the
-  matching schedule option and the same conditional fields; otherwise remove
-  "installment" from the bill schedule choices so it isn't a dead option.
-- Derive any redundant field (e.g. per-installment amount = total / count) rather
-  than storing conflicting values.
-
-## 4. More spending categories
-**Current set (bundle):**
-`["housing","utilities","transportation","insurance","debt","subscriptions","lifestyle","savings","other"]`
-with a color map (e.g. `savings:"#00bfff"`, `other:"#888888"`, neon palette) and a
-label map.
-
-**Fix:** Add categories in the source's single categories config/constants and
-update **all three** places that reference them:
-1. the category array/enum,
-2. the label map,
-3. the color map (give each new category a color consistent with the neon palette).
-Suggested additions: `groceries`, `dining`, `healthcare`, `entertainment`,
-`education`, `personal-care`, `childcare`, `pets`, `gifts-donations`, `travel`,
-`taxes`, `clothing`, `home-improvement`. Confirm every category dropdown/selector
-reads from the shared list (no hardcoded subsets — the bundle shows at least one
-short subset array like `["lifestyle","subscriptions","other","transportation"]`
-that may need updating too).
-
-## 5. Font selection option in Settings
-**Requirements:**
-- Add a **font picker** to Settings.
-- **Default: Garamond** — use **EB Garamond** from Google Fonts (plain "Garamond"
-  isn't reliably available cross-platform).
-- Additional options: **Roboto**, **IBM Plex Serif**, **Tektur** (all Google Fonts).
-
-**Fix (source level):**
-- Add the font families to font loading. Current `index.html` preloads Inter +
-  JetBrains Mono via Google Fonts `<link>`; add EB Garamond, Roboto, IBM Plex Serif,
-  Tektur (or inject the stylesheet dynamically when a font is selected to avoid
-  loading all four upfront).
-- Persist the chosen font with the rest of app settings (localStorage / IndexedDB —
-  FinVis uses a `db-vendor` bundle, likely Dexie/IndexedDB).
-- Apply via a CSS variable on `:root` (e.g. `--font-body`) or a class on `<html>`,
-  so it themes the whole app. Make EB Garamond the default value.
+1. **Every file looks modified.** exFAT reports mode 0755 for everything, so git
+   sees spurious `100644 → 100755` changes. Both repos here already have
+   `git config core.fileMode false`; set it on any new clone on this drive.
+2. **Editors rewrite line endings.** Much of the working tree can show as modified
+   with equal insertion/deletion counts and *zero* real content change. Check with
+   `git diff --ignore-cr-at-eol --name-only` before committing, and `git checkout --`
+   the noise. Do not commit CRLF churn — it buries the real diff.
+3. **`node_modules` cannot live on exFAT** (npm needs symlinks for `.bin`). Build
+   from `~/Projects/finvis`, or copy the source to an APFS scratch dir, clone
+   `node_modules` into it with `cp -Rc`, and build there.
 
 ---
 
-## Notes for whoever picks this up
-- Prefer TDD / a dev server for #1, #2, #3 — they're logic/UX changes that are easy
-  to get subtly wrong and were impossible to verify in the minified bundle.
-- After rebuild, asset filenames get new content hashes; the built `index.html`
-  updates its `<script>`/`<link>` refs automatically — just copy the whole `dist`.
-- Keep `base: '/n/finvis/'` and the PWA config so service-worker paths stay valid.
+# FinVis deploy loop
+
+1. Edit source in `/Volumes/Lilith/brain/finvis/`.
+2. Sync to an APFS scratch dir (see above) and run `npx vitest run` and
+   `npx tsc --noEmit`.
+3. `npm run build`, then verify the built output with `npx vite preview`
+   — the app is served under `/n/finvis/`, so check `http://localhost:<port>/n/finvis/`.
+4. `rsync -rt --delete dist/ <site>/n/finvis/`. Keep `base: '/n/finvis/'` in
+   `vite.config.ts` and the PWA config so service-worker paths stay valid.
+5. Check `git diff --ignore-cr-at-eol --name-only` before committing.
+6. Commit both repos: the source to `oltray/finvis`, the build to this one.
+
+---
+
+# FinVis fix plan — COMPLETED 2026-07-23
+
+All five issues below were fixed in the source, verified, rebuilt and deployed
+(site commit `effe64d`, source commit `8630165`). Kept as a record of what
+changed and where, in case of regressions.
+
+## 1. Recurring bills showed as one inflated monthly event — FIXED
+A $70/weekly bill rendered as a single ~$303 event, because the calendar placed
+bills with `dueDay === dayOfMonth` and ran the amount through the monthly
+normalizer.
+
+Fixed by `src/core/engine/recurrence.ts`, which expands each bill into real
+occurrences carrying the **raw per-payment amount**. `getHeatmapData`,
+`getBillsDueInMonth` and the dashboard's "Due This Week" all consume it.
+The monthly normalizer (`getMonthlyEquivalent`) is still correct for
+summary/budget totals and is deliberately left in place there.
+
+Added `Bill.startDate` as a recurrence anchor (weekly/biweekly step from it) and
+a `semi-monthly` frequency. Bills without a `startDate` fall back to `dueDay` in
+their `createdAt` month, so existing data keeps working. Covered by 16 tests in
+`recurrence.test.ts` — **run these before touching the engine.**
+
+## 2. CSV export gave a single line / dropped files — FIXED
+Two separate bugs: the object URL was revoked immediately after `a.click()`, so
+mobile browsers truncated the file mid-read; and two downloads fired back to back,
+so browsers dropped the second.
+
+Fixed in `src/core/utils/csv.ts`: revoke is deferred, the anchor is appended to
+the DOM, multi-file exports go through `navigator.share` when available (one
+gesture, all files) and otherwise space downloads out. Output is RFC 4180 CRLF
+with a UTF-8 BOM. Bills, debts and incomes now export as three separate files.
+`parseCSV` tolerates CRLF/LF and a BOM — the deployed `sample_bills.csv` is CRLF.
+
+## 3. Installments UI missing — FIXED
+The model supported installments but the form never rendered inputs. `BillForm`
+(shared by the Bills *and* Debt pages — fixing it once covers both) now renders an
+Installment Plan block when `type === 'installment'`: count, payments remaining,
+first payment date and plan total. Plan total and per-payment amount derive from
+each other rather than being stored twice. Added `installmentCount` and
+`firstPaymentDate` to the model.
+
+## 4. More spending categories — FIXED
+Went from 9 to 22 categories. `BILL_CATEGORIES` in `src/core/models/bill.ts` is
+now the single source of truth, derived from `CATEGORY_LABELS`. **Adding a
+category means updating `CATEGORY_LABELS` and `CATEGORY_COLORS` only** — the
+selectors, CSV validation and budget page all read the shared list. The one
+deliberate subset left is `FIXED_CATEGORIES`/`VARIABLE_CATEGORIES` in
+`pattern-detector.ts`, which classifies rather than enumerates; add new
+categories there too or they're excluded from the fixed-vs-variable ratio.
+
+## 5. Font picker in Settings — FIXED
+EB Garamond (default), Roboto, IBM Plex Serif, Tektur. Selection persists to
+`localStorage` under `finvis-font` and applies via the `--font-body` CSS variable
+on `:root`; Tailwind's `font-sans`/`font-display` both point at it. `.font-mono`
+stays JetBrains Mono so numeric columns keep aligning. Note this changed the
+default body font from DM Sans to EB Garamond for everyone.
