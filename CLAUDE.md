@@ -9,11 +9,17 @@ FinVis app lives at `n/finvis/` as a compiled Vite/React bundle.
 - Styles: `n/finvis/assets/index-nnfXGXhk.css`
 
 > **Important:** The FinVis *source project* (Vite + React + TypeScript) is **not**
-> in this repo and was not found elsewhere on this machine during the last session.
-> The fixes below are meant to be applied in that **source project**, then rebuilt,
-> with the resulting `dist/` copied back into `n/finvis/`. Do **not** rebuild FinVis
-> from scratch — locate the original source first. The bundle references below are
-> diagnostic evidence to help you find the corresponding source, not edit targets.
+> in this repo. It lives at **`/Volumes/Lilith/brain/finvis/`** (working copy used
+> when on the external drive), mirrored from `~/Projects/finvis` on the main Mac,
+> and is backed by the private GitHub repo `oltray/finvis`.
+> Fixes are applied in that **source project**, then rebuilt, with the resulting
+> `dist/` copied back into `n/finvis/`. Do **not** rebuild FinVis from scratch, and
+> do **not** edit the minified bundles here — they are build output. The bundle
+> references below are diagnostic evidence only.
+>
+> Note: Lilith is exFAT, so the copy there needs `git config core.fileMode false`
+> and `node_modules` cannot be installed on it (symlinks unsupported) — build from
+> `~/Projects/finvis` or an APFS scratch copy.
 
 ---
 
