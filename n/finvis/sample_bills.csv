@@ -11,7 +11,7 @@ bill_009,Spotify,10.99,monthly,subscriptions,8,ongoing,true,Premium
 bill_010,Disney+,7.99,monthly,subscriptions,18,ongoing,false,
 bill_011,Gym Membership,49.99,monthly,lifestyle,3,ongoing,false,24/7 access
 bill_012,Phone Bill,65.00,monthly,utilities,22,ongoing,false,Unlimited data
-bill_013,Credit Card Min,50.00,monthly,debt,25,ongoing,false,$2,400 balance
+bill_013,Credit Card Min,50.00,monthly,debt,25,ongoing,false,"$2,400 balance"
 bill_014,Student Loan,215.00,monthly,debt,28,ongoing,true,Federal loan
 bill_015,Gas Bill,55.00,monthly,utilities,18,ongoing,false,Winter months higher
 bill_016,Renter's Insurance,18.00,monthly,insurance,1,ongoing,true,
